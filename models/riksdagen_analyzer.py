@@ -58,6 +58,10 @@ class RiksdagenAnalyzer(BaseModel):
         self.save_and_print()
         # self.generate_document_term_matix()
 
+    def load_pickle(self):
+        """Load pickle from disk to be able to work on it"""
+        self.df = pd.read_pickle(f"{self.filename}.pickle.xz")
+
     @staticmethod
     def detect_language(text):
         word_count = len(text.split())  # Split by spaces and count words
