@@ -54,8 +54,6 @@ class RiksdagenAnalyzer(BaseModel):
         self.generate_ids()
         self.strip_newlines()
         self.determine_suitability()
-        # print(self.df)
-        # exit()
         self.determine_language()
         self.save_and_print()
         # self.generate_document_term_matix()
