@@ -9,6 +9,7 @@ from pandas import DataFrame
 from pydantic import BaseModel
 import pandas as pd
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 from models.riksdagen_document import RiksdagenDocument
 
@@ -18,7 +19,7 @@ class RiksdagenAnalyzer(BaseModel):
     language_directory: str = "data/sv"
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = 1
+    max_documents_to_extract: int = 1000
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -227,11 +228,16 @@ class RiksdagenAnalyzer(BaseModel):
         self.df['md5_hash'] = self.df['sentence'].apply(self.generate_md5_hash)
 
     def extract_sentences_from_all_documents(self):
-        for index, doc in enumerate(self.documents, 1):
-            if index == self.max_documents_to_extract:
-                break
-            print(f"Processing document {index}/{len(self.documents)}")
-            doc.extract_sentences()
+        print("Extracting sentences from all documents")
+        total_documents = min(len(self.documents), self.max_documents_to_extract)
+        with tqdm(total=total_documents, desc="Processing Documents", unit="doc") as pbar_docs:
+            for index, doc in enumerate(self.documents, 1):
+                if index > self.max_documents_to_extract:
+                    print("max reached, stopping extraction")
+                    break
+                pbar_docs.update(1)
+                tqdm.write(f"Processing document {index}/{len(self.documents)}")
+                doc.extract_sentences()
 
     def create_dataframe_with_all_sentences(self):
         print("creating dataframe")
@@ -247,8 +253,6 @@ class RiksdagenAnalyzer(BaseModel):
                 data['sentence'].append(sentence)
 
         self.df = pd.DataFrame(data)
-        print(self.df)
-        exit()
 
     def read_json_from_disk(self):
         print("reading json from disk")
