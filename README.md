@@ -17,3 +17,6 @@ https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
 
 ## Inspiration
 Alice Zhao https://www.youtube.com/watch?v=8Fw1nh8lR54
+
+## License
+GPLv3+
