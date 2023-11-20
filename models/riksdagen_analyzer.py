@@ -1,5 +1,6 @@
 import hashlib
 import json
+import lzma
 import os
 import uuid
 from typing import List
@@ -16,10 +17,11 @@ from models.riksdagen_document import RiksdagenDocument
 
 class RiksdagenAnalyzer(BaseModel):
     # Replace 'path/to/your/directory' with the path to your directory containing the .txt files
-    language_directory: str = "data/sv"
+    workdirectory: str = "data/sv"
+    filename: str = "departementserien"
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = 3
+    max_documents_to_extract: int = 1000
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -212,8 +214,8 @@ class RiksdagenAnalyzer(BaseModel):
 
         print(f"Number of empty sentences: {empty_sentences_count}")
 
-        self.df.to_pickle("departementserien.pickle.xz", compression="xz")
-        self.df.to_csv("departementserien.csv.xz", compression="xz")
+        self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
+        self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
         self.save_as_jsonl()
 
     def save_as_jsonl(self):
@@ -226,8 +228,15 @@ class RiksdagenAnalyzer(BaseModel):
         data = self.df.to_dict(orient='records')
 
         # Write data to a JSONL file
-        with jsonlines.open('departementserien.jsonl', mode='w') as writer:
+        with jsonlines.open(f'{self.filename}.jsonl', mode='w') as writer:
             writer.write_all(data)
+
+        # Compress the JSONL file with xz
+        with open(f'{self.filename}.jsonl', 'rb') as jsonl_file:
+            with lzma.open(f'{self.filename}.jsonl.xz', 'wb') as xz_file:
+                for line in jsonl_file:
+                    xz_file.write(line)
+        os.remove(f'{self.filename}.jsonl')
 
     @staticmethod
     def generate_md5_hash(sentence):
@@ -270,7 +279,7 @@ class RiksdagenAnalyzer(BaseModel):
 
     def read_json_from_disk(self):
         print("reading json from disk")
-        for root, dirs, files in os.walk(self.language_directory):
+        for root, dirs, files in os.walk(self.workdirectory):
             for file in files:
                 if file.endswith(".json"):
                     file_path = os.path.join(root, file)
