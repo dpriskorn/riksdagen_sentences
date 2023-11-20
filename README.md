@@ -29,3 +29,12 @@ Alice Zhao https://www.youtube.com/watch?v=8Fw1nh8lR54
 
 ## License
 GPLv3+
+
+## What I learned
+* pandas is super nice and fast
+* the default sentenizer for Swedish in spaCy is not ideal
+* chatgpt can write good code, but it still outputs wonky code sometimes
+* through chatgpt I used the progress library tqdm 
+for the first time and it is very nice :)
+* working on millions of sentences with NLP takes time even on a fast machine 
+like my 8th gen i5-core laptop
