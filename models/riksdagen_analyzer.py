@@ -2,9 +2,12 @@ import hashlib
 import json
 import lzma
 import os
+import re
+import string
 import uuid
 from typing import List
 
+import jsonlines
 from langdetect import detect
 from pandas import DataFrame
 from pydantic import BaseModel
@@ -18,10 +21,10 @@ from models.riksdagen_document import RiksdagenDocument
 class RiksdagenAnalyzer(BaseModel):
     # Replace 'path/to/your/directory' with the path to your directory containing the .txt files
     workdirectory: str = "data/sv"
-    filename: str = "departementserien"
+    filename: str = "departementserien_test"
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = 1000
+    max_documents_to_extract: int = 2
     skipped_documents_count: int = 0
     additional_stop_words: List[str] = [
         "ska",
@@ -57,7 +60,8 @@ class RiksdagenAnalyzer(BaseModel):
         self.strip_newlines()
         self.determine_suitability()
         self.determine_language()
-        self.save_and_print()
+        self.print_statistics()
+        self.save()
         # self.generate_document_term_matix()
 
     def load_pickle(self):
@@ -128,9 +132,6 @@ class RiksdagenAnalyzer(BaseModel):
         suitable_sentences = self.df[self.df["suitable"]]["sentence"]
 
         # Apply a first round of text cleaning techniques
-        import re
-        import string
-
         def clean_text_round1(text):
             """Make text lowercase, remove text in square brackets, remove punctuation and remove words containing numbers."""
             text = text.lower()
@@ -215,39 +216,65 @@ class RiksdagenAnalyzer(BaseModel):
         # Remove newlines from the end of sentences in the 'sentences' column
         self.df["sentence"] = self.df["sentence"].astype(str).str.rstrip("\n")
 
-    def save_and_print(self):
-        # Display the DataFrame
-        print(self.df)
-        print(self.df.info())
+    def print_statistics(self):
+        print("Statistics:")
+        # Counting total number of rows
+        total_rows = self.df.shape[0]
+        print("Total number of sentences:", total_rows)
 
         # Count the number of empty sentences
         empty_sentences_count = (self.df['sentence'].str.strip() == '').sum()
-
         print(f"Number of empty sentences: {empty_sentences_count}")
 
+        # Counting rows where 'suitable' column is True
+        suitable_count = self.df[self.df['suitable'] == True].shape[0]
+        print("Number of suitable sentences:", suitable_count)
+        suitable_percentage = (suitable_count / total_rows) * 100
+        print("Percentage suitable sentences:", round(suitable_percentage))
+
+        # Counting and displaying the distribution of language codes
+        language_distribution = self.df['langdetect'].value_counts()
+        # Calculating percentages
+        en_percentage = (language_distribution['en'] / total_rows) * 100
+        sv_percentage = (language_distribution['sv'] / total_rows) * 100
+        print("Percentage of 'en' (English) sentences:", round(en_percentage))
+        print("Percentage of 'sv' (Swedish) sentences:", round(sv_percentage))
+        print("Language code distribution:")
+        print(language_distribution)
+
+    def save(self):
         self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
         self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
-        self.save_as_jsonl()
+        self.save_as_jsonl(self.df)
 
-    def save_as_jsonl(self):
-        import jsonlines
+        # Save a version with only rows where 'suitable' is True
+        suitable_rows = self.df[self.df['suitable']]
+        suitable_rows.to_pickle(f"{self.filename}_suitable.pickle.xz", compression="xz")
+        suitable_rows.to_csv(f"{self.filename}_suitable.csv.xz", compression="xz")
+        self.save_as_jsonl(suitable_rows, suitable=True)
 
+    def save_as_jsonl(self, df: DataFrame, suitable: bool = False):
         # Assuming your DataFrame is named df
         # Replace 'your_data.jsonl' with the desired filename
 
         # Convert DataFrame to list of dictionaries
-        data = self.df.to_dict(orient='records')
+        data = df.to_dict(orient='records')
+
+        if suitable:
+            filename = f'{self.filename}_suitable.jsonl'
+        else:
+            filename = f'{self.filename}.jsonl'
 
         # Write data to a JSONL file
-        with jsonlines.open(f'{self.filename}.jsonl', mode='w') as writer:
+        with jsonlines.open(filename, mode='w') as writer:
             writer.write_all(data)
 
         # Compress the JSONL file with xz
-        with open(f'{self.filename}.jsonl', 'rb') as jsonl_file:
-            with lzma.open(f'{self.filename}.jsonl.xz', 'wb') as xz_file:
+        with open(filename, 'rb') as jsonl_file:
+            with lzma.open(f'{filename}.xz', 'wb') as xz_file:
                 for line in jsonl_file:
                     xz_file.write(line)
-        os.remove(f'{self.filename}.jsonl')
+        os.remove(filename)
 
     @staticmethod
     def generate_md5_hash(sentence):
@@ -301,15 +328,17 @@ class RiksdagenAnalyzer(BaseModel):
                             if 'dokumentstatus' in data and 'dokument' in data['dokumentstatus']:
                                 dok_id = data['dokumentstatus']['dokument'].get('dok_id')
                                 text = data['dokumentstatus']['dokument'].get('text')
-                                # If dok_id or text is None, skip adding the document
-                                if dok_id is not None and text is not None:
-                                    document = RiksdagenDocument(id=dok_id, text=text)
+                                html = data['dokumentstatus']['dokument'].get('html')
+
+                                # Store content if available, even if one is missing
+                                if dok_id is not None and (text is not None or html is not None):
+                                    document = RiksdagenDocument(id=dok_id, text=text or "", html=html or "")
                                     self.documents.append(document)
                                 else:
-                                    self.skipped_documents_count = + 1
-                                    print(f"Skipping document {file_path}: Missing dok_id or text")
+                                    self.skipped_documents_count += 1
+                                    print(f"Skipping document {json_file}: Missing dok_id and (text or html)")
                             else:
-                                print(f"Skipping document {file_path}: Missing 'dokumentstatus' or 'dokument'")
+                                print(f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'")
                         except json.JSONDecodeError as e:
                             print(f"Error loading JSON from {file_path}: {e}")
 

@@ -1,12 +1,14 @@
 from typing import List
 
 import spacy
+from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 
 class RiksdagenDocument(BaseModel):
     id: str
-    text: str
+    text: str = ""
+    html: str = ""
     chunk_size: int = 100000
     chunks: List[str] = list()
     sentences: List[str] = list()
@@ -15,13 +17,6 @@ class RiksdagenDocument(BaseModel):
     def count_words(self) -> int:
         # Counting words in the text
         return len(self.text.split())
-
-    def chunk_text(self):
-        # Function to chunk the text
-        start = 0
-        while start < len(self.text):
-            self.chunks.append(self.text[start: start + self.chunk_size])
-            start += self.chunk_size
 
     @property
     def number_of_chunks(self) -> int:
@@ -33,7 +28,24 @@ class RiksdagenDocument(BaseModel):
         # Count the number of chunks
         return len(self.sentences)
 
+    def chunk_text(self):
+        # Function to chunk the text
+        start = 0
+        while start < len(self.text):
+            self.chunks.append(self.text[start: start + self.chunk_size])
+            start += self.chunk_size
+
+    def convert_html_to_text(self):
+        # Check if HTML content exists for the document
+        soup = BeautifulSoup(self.html, 'lxml')
+        # Extract text from the HTML
+        # TODO investigate how stripping affects the result
+        self.text = soup.get_text(separator=' ', strip=False)
+
     def extract_sentences(self):
+        if not self.text:
+            # We assume html is present
+            self.convert_html_to_text()
         # Load the Swedish language model
         nlp = spacy.load("sv_core_news_sm")
 
