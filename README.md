@@ -1,5 +1,5 @@
 # riksdagen2sentences
-Project to sentenize all the open data of Riksdagen to create an easily linkable 
+Project that aims to sentenize all the open data of Riksdagen to create an easily linkable 
 dataset of sentences that can be refered to from Wikidata lexemes and other resources. 
 
 The advantage of such a data set is huge from a language perspective. The sentences contain valuable information about what is going on in society. They contain a lot of new words which enter the language via political dialogue or written documents from the Swedish state institutions.
