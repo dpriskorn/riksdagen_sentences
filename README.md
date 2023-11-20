@@ -1,12 +1,16 @@
-# opendata2lexemes
-Web app to help complete the collection of lexemes in Wikidata
+# riksdagen2sentences
+Project to sentenize all the open data of Riksdagen to create an easily linkable 
+dataset of sentences that can be refered to from Wikidata lexemes and other resources. 
 
-Keywords: NLP, data science, open data, swedish, open government data
+The advantage of such a data set is huge from a language perspective. The sentences contain valuable information about what is going on in society. They contain a lot of new words which enter the language via political dialogue or written documents from the Swedish state institutions.
 
-# Ideas
-Use topic modeling on the data and make it possible for the user to 
-work on words within an area of expertise or interest. 
-E.g. words in swedish sentences related to *defence*.
+Keywords: NLP, data science, open data, swedish, open government data, riksdagen, sweden
+
+# Idea
+Use spaCy to create the first version.
+All sentences are language detected, hashed using md5 and given an UUID which is unique for each release. 
+
+As better sentenizing becomes available or Riksdagen improve their data over time, the hashes and UUIDs will change, but all released versions will be locked in time and can always be refered to consistently and reliably.
 
 ## Sources
 ### sv
