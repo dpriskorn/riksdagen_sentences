@@ -80,9 +80,13 @@ class RiksdagenAnalyzer(BaseModel):
             return 'Less than 5 words'
 
     def determine_language(self):
-        print("determining language for suitable sentences")
-        # Apply language detection only for rows where Suitable_Column is True
-        self.df['langdetect'] = self.df[self.df['suitable']]['sentence'].apply(self.detect_language)
+        # TODO can this be parallelized to use more than 1 cpu?
+        print("Determining language for suitable sentences")
+        suitable_sentences = self.df[self.df['suitable']]['sentence']
+
+        # Use tqdm to show progress while applying language detection
+        for idx in tqdm(suitable_sentences.index, desc="Detecting language", total=len(suitable_sentences)):
+            self.df.at[idx, 'langdetect'] = self.detect_language(self.df.at[idx, 'sentence'])
 
     @staticmethod
     def create_plot(name: str, df: DataFrame):
