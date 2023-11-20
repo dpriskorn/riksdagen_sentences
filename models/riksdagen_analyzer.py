@@ -22,6 +22,7 @@ class RiksdagenAnalyzer(BaseModel):
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = 1000
+    skipped_documents_count: int = 0
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -49,6 +50,7 @@ class RiksdagenAnalyzer(BaseModel):
     def start(self):
         self.read_json_from_disk()
         self.print_number_of_documents()
+        self.print_number_of_skipped_documents()
         self.extract_sentences_from_all_documents()
         self.create_dataframe_with_all_sentences()
         self.generate_ids()
@@ -61,6 +63,10 @@ class RiksdagenAnalyzer(BaseModel):
     def load_pickle(self):
         """Load pickle from disk to be able to work on it"""
         self.df = pd.read_pickle(f"{self.filename}.pickle.xz")
+
+    def print_number_of_skipped_documents(self):
+        print(f"Number of skipped documents "
+              f"(because of missing or bad data): {self.skipped_documents_count}")
 
     @staticmethod
     def detect_language(text):
@@ -157,8 +163,7 @@ class RiksdagenAnalyzer(BaseModel):
         print(data_dtm)
         # data_dtm.to_csv("monogram_document-term_matrix.csv")
 
-
-    #def create_plots(self):
+        # def create_plots(self):
         print("creating plots of most frequent words")
 
         self.create_plot(name="top_10_monogram.png", df=data_dtm)
@@ -297,6 +302,7 @@ class RiksdagenAnalyzer(BaseModel):
                                     document = RiksdagenDocument(id=dok_id, text=text)
                                     self.documents.append(document)
                                 else:
+                                    self.skipped_documents_count = + 1
                                     print(f"Skipping document {file_path}: Missing dok_id or text")
                             else:
                                 print(f"Skipping document {file_path}: Missing 'dokumentstatus' or 'dokument'")
