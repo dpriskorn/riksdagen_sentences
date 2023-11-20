@@ -19,7 +19,7 @@ class RiksdagenAnalyzer(BaseModel):
     language_directory: str = "data/sv"
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = 1000
+    max_documents_to_extract: int = 3
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -212,8 +212,22 @@ class RiksdagenAnalyzer(BaseModel):
 
         print(f"Number of empty sentences: {empty_sentences_count}")
 
-        self.df.to_excel("departementserien.xlsx")
         self.df.to_pickle("departementserien.pickle.xz", compression="xz")
+        self.df.to_csv("departementserien.csv.xz", compression="xz")
+        self.save_as_jsonl()
+
+    def save_as_jsonl(self):
+        import jsonlines
+
+        # Assuming your DataFrame is named df
+        # Replace 'your_data.jsonl' with the desired filename
+
+        # Convert DataFrame to list of dictionaries
+        data = self.df.to_dict(orient='records')
+
+        # Write data to a JSONL file
+        with jsonlines.open('departementserien.jsonl', mode='w') as writer:
+            writer.write_all(data)
 
     @staticmethod
     def generate_md5_hash(sentence):
