@@ -6,11 +6,20 @@ The advantage of such a data set is huge from a language perspective. The senten
 
 Keywords: NLP, data science, open data, swedish, open government data, riksdagen, sweden
 
-# Idea
+## Idea
 Use spaCy to create the first version.
 All sentences are language detected, hashed using md5 and given an UUID which is unique for each release. 
 
 As better sentenizing becomes available or Riksdagen improve their data over time, the hashes and UUIDs will change, but all released versions will be locked in time and can always be refered to consistently and reliably.
+
+## Features
+* reliability
+* locked in time
+* referencable
+* language detected
+* uniquely identifiable
+* linkable (the individual sentences are not planned to be linkable at this stage, but the release is and line numbers 
+or UUIDs can be used to link with no ambiguity)
 
 ## Sources
 https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
