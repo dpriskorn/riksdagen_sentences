@@ -13,7 +13,6 @@ All sentences are language detected, hashed using md5 and given an UUID which is
 As better sentenizing becomes available or Riksdagen improve their data over time, the hashes and UUIDs will change, but all released versions will be locked in time and can always be refered to consistently and reliably.
 
 ## Sources
-### sv
 https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
 
 ## Inspiration
