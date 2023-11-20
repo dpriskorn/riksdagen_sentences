@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "opendata2lexemes"
+version = "0.1.0"
+description = ""
+authors = ["Dennis Priskorn"]
+license = "GPLv3+"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+pandas = "^2.1.3"
+spacy = "^3.7.2"
+scikit-learn = "^1.3.2"
+stop-words = "^2018.7.23"
+wordcloud = "^1.9.2"
+matplotlib = "^3.8.2"
+uuid = "^1.30"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.11.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
