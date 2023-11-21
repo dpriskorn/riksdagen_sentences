@@ -6,6 +6,9 @@ from pydantic import BaseModel
 
 
 class RiksdagenDocument(BaseModel):
+    """This model supports extraction of sentences based on html or text input
+    It uses spaCy to find sentence boundaries"""
+
     id: str
     text: str = ""
     html: str = ""
@@ -32,15 +35,15 @@ class RiksdagenDocument(BaseModel):
         # Function to chunk the text
         start = 0
         while start < len(self.text):
-            self.chunks.append(self.text[start: start + self.chunk_size])
+            self.chunks.append(self.text[start : start + self.chunk_size])
             start += self.chunk_size
 
     def convert_html_to_text(self):
         # Check if HTML content exists for the document
-        soup = BeautifulSoup(self.html, 'lxml')
+        soup = BeautifulSoup(self.html, "lxml")
         # Extract text from the HTML
         # TODO investigate how stripping affects the result
-        self.text = soup.get_text(separator=' ', strip=False)
+        self.text = soup.get_text(separator=" ", strip=False)
 
     def extract_sentences(self):
         if not self.text:
