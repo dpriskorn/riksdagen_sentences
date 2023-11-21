@@ -18,6 +18,7 @@ class RiksdagenDocument(BaseModel):
     chunk_size: int = 100000
     chunks: List[str] = list()
     sentences: List[str] = list()
+    token_count: int = 0
 
     @property
     def count_words(self) -> int:
@@ -73,6 +74,11 @@ class RiksdagenDocument(BaseModel):
             # Filter out sentences consisting only of newline characters
             filtered_sentences = [sent.text for sent in doc.sents if sent.text.strip()]
             self.sentences.extend(filtered_sentences)
+
+            # Count tokens in each sentence
+            for sent in filtered_sentences:
+                sent_doc = nlp(sent)
+                self.token_count += len(sent_doc)
 
             count += 1
 

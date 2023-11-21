@@ -30,6 +30,7 @@ class RiksdagenAnalyzer(BaseModel):
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = config.max_documents_to_extract
     skipped_documents_count: int = 0
+    token_count: int = 0
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -70,6 +71,7 @@ class RiksdagenAnalyzer(BaseModel):
         self.read_json_from_disk_and_extract()
         # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
+        self.print_number_of_tokens()
         #self.extract_sentences_from_all_documents()
         #self.create_dataframe_with_all_sentences()
         # self.generate_ids()
@@ -386,6 +388,8 @@ class RiksdagenAnalyzer(BaseModel):
                                 id=dok_id, text=text or "", html=html or ""
                             )
                             document.extract_sentences()
+                            self.token_count = + document.token_count
+                            self.print_number_of_tokens()
                             self.documents.append(document)
                             self.create_dataframe_with_all_sentences()
                             self.generate_ids()
@@ -411,3 +415,7 @@ class RiksdagenAnalyzer(BaseModel):
     def print_number_of_documents(self):
         # Print or use the variable containing all text
         print(f"number of documents: {len(self.documents)}")
+
+    def print_number_of_tokens(self):
+        # Print or use the variable containing all text
+        print(f"Total number of tokens: {self.token_count}")
