@@ -385,15 +385,15 @@ class RiksdagenAnalyzer(BaseModel):
                             self.documents.append(document)
                         else:
                             self.skipped_documents_count += 1
-                            print(
+                            logger.info(
                                 f"Skipping document {json_file}: Missing dok_id and (text or html)"
                             )
                     else:
-                        print(
+                        logger.info(
                             f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'"
                         )
                 except json.JSONDecodeError as e:
-                    print(f"Error loading JSON from {file_path}: {e}")
+                    logger.error(f"Error loading JSON from {file_path}: {e}")
 
     def print_number_of_documents(self):
         # Print or use the variable containing all text
