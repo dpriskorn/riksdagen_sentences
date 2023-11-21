@@ -1,7 +1,6 @@
 import hashlib
 import json
 import logging
-import lzma
 import os
 import re
 import string
@@ -68,17 +67,17 @@ class RiksdagenAnalyzer(BaseModel):
         ]
 
     def start(self):
-        self.read_json_from_disk()
+        self.read_json_from_disk_and_extract()
         # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
-        self.extract_sentences_from_all_documents()
-        self.create_dataframe_with_all_sentences()
-        self.generate_ids()
-        self.strip_newlines()
-        self.determine_suitability()
-        self.determine_language()
-        self.print_statistics()
-        self.save()
+        #self.extract_sentences_from_all_documents()
+        #self.create_dataframe_with_all_sentences()
+        # self.generate_ids()
+        # self.strip_newlines()
+        # self.determine_suitability()
+        # self.determine_language()
+        # self.print_statistics()
+        # self.save()
         # self.generate_document_term_matix()
 
     def load_pickle(self):
@@ -284,38 +283,42 @@ class RiksdagenAnalyzer(BaseModel):
         print(language_distribution)
 
     def save(self):
-        self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
-        self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
-        self.save_as_jsonl(self.df)
+        # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
+        # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
+        self.append_to_jsonl(self.df)
 
         # Save a version with only rows where 'suitable' is True
-        suitable_rows = self.df[self.df["suitable"]]
-        suitable_rows.to_pickle(f"{self.filename}_suitable.pickle.xz", compression="xz")
-        suitable_rows.to_csv(f"{self.filename}_suitable.csv.xz", compression="xz")
-        self.save_as_jsonl(suitable_rows, suitable=True)
+        # suitable_rows = self.df[self.df["suitable"]]
+        # suitable_rows.to_pickle(f"{self.filename}_suitable.pickle.xz", compression="xz")
+        # suitable_rows.to_csv(f"{self.filename}_suitable.csv.xz", compression="xz")
+        # self.save_as_jsonl(suitable_rows, suitable=True)
 
-    def save_as_jsonl(self, df: DataFrame, suitable: bool = False):
+    def create_suitable_jsonl(self):
+        # TODO
+        pass
+
+    def append_to_jsonl(self):
         # Assuming your DataFrame is named df
         # Replace 'your_data.jsonl' with the desired filename
 
         # Convert DataFrame to list of dictionaries
-        data = df.to_dict(orient="records")
+        data = self.df.to_dict(orient="records")
 
-        if suitable:
-            filename = f"{self.filename}_suitable.jsonl"
-        else:
-            filename = f"{self.filename}.jsonl"
+        # if suitable:
+        #     filename = f"{self.filename}_suitable.jsonl"
+        # else:
+        filename = f"{self.filename}.jsonl"
 
         # Write data to a JSONL file
-        with jsonlines.open(filename, mode="w") as writer:
+        with jsonlines.open(filename, mode="a") as writer:
             writer.write_all(data)
 
         # Compress the JSONL file with xz
-        with open(filename, "rb") as jsonl_file:
-            with lzma.open(f"{filename}.xz", "wb") as xz_file:
-                for line in jsonl_file:
-                    xz_file.write(line)
-        os.remove(filename)
+        # with open(filename, "rb") as jsonl_file:
+        #     with lzma.open(f"{filename}.xz", "wb") as xz_file:
+        #         for line in jsonl_file:
+        #             xz_file.write(line)
+        # os.remove(filename)
 
     @staticmethod
     def generate_md5_hash(sentence):
@@ -329,17 +332,17 @@ class RiksdagenAnalyzer(BaseModel):
 
         self.df["md5_hash"] = self.df["sentence"].apply(self.generate_md5_hash)
 
-    def extract_sentences_from_all_documents(self):
-        total_documents = min(len(self.documents), self.max_documents_to_extract)
-        with tqdm(
-            total=total_documents, desc="Extracting sentences from all documents", unit="doc"
-        ) as pbar_docs:
-            for index, doc in enumerate(self.documents, 1):
-                if index > self.max_documents_to_extract:
-                    print("max reached, stopping extraction")
-                    break
-                pbar_docs.update(1)
-                doc.extract_sentences()
+    # def extract_sentences_from_all_documents(self):
+    #     total_documents = min(len(self.documents), self.max_documents_to_extract)
+    #     with tqdm(
+    #         total=total_documents, desc="Extracting sentences from all documents", unit="doc"
+    #     ) as pbar_docs:
+    #         for index, doc in enumerate(self.documents, 1):
+    #             if index > self.max_documents_to_extract:
+    #                 print("max reached, stopping extraction")
+    #                 break
+    #             pbar_docs.update(1)
+    #             doc.extract_sentences()
 
     def create_dataframe_with_all_sentences(self):
         print("creating dataframe")
@@ -353,7 +356,7 @@ class RiksdagenAnalyzer(BaseModel):
 
         self.df = pd.DataFrame(data)
 
-    def read_json_from_disk(self):
+    def read_json_from_disk_and_extract(self):
         # print("reading json from disk")
         file_paths = []
         for root, dirs, files in os.walk(self.workdirectory):
@@ -382,7 +385,17 @@ class RiksdagenAnalyzer(BaseModel):
                             document = RiksdagenDocument(
                                 id=dok_id, text=text or "", html=html or ""
                             )
+                            document.extract_sentences()
                             self.documents.append(document)
+                            self.create_dataframe_with_all_sentences()
+                            self.generate_ids()
+                            self.strip_newlines()
+                            self.determine_suitability()
+                            self.determine_language()
+                            self.append_to_jsonl()
+                            # Reset documents to avoid getting killed by the 
+                            # kernel because we run out of memory
+                            self.documents = []
                         else:
                             self.skipped_documents_count += 1
                             logger.info(
