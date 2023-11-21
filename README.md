@@ -37,4 +37,5 @@ GPLv3+
 * through chatgpt I used the progress library tqdm 
 for the first time and it is very nice :)
 * working on millions of sentences with NLP takes time even on a fast machine 
-like my 8th gen i5-core laptop
+like my 8th gen 8-core i5 laptop
+* langdetect is slow and only utilizes 1 CPU
