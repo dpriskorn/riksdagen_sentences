@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "riksdagen_sentences"
 version = "0.1.0"
-description = ""
+description = "Project that aims to sentenize all the open data of Riksdagen to create an easily linkable dataset of sentences that can be refered to from Wikidata lexemes and other resources"
 authors = ["Dennis Priskorn"]
 license = "GPLv3+"
 readme = "README.md"
@@ -16,7 +16,6 @@ wordcloud = "^1.9.2"
 matplotlib = "^3.8.2"
 uuid = "^1.30"
 pydantic = "^2.5.1"
-openpyxl = "^3.1.2"
 langdetect = "^1.0.9"
 tqdm = "^4.66.1"
 jsonlines = "^4.0.0"
