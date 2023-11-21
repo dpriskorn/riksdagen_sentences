@@ -2,7 +2,7 @@ from models.riksdagen_analyzer import RiksdagenAnalyzer
 
 
 ra = RiksdagenAnalyzer(
-    workdirectory="data/sv/departementserien", filename="departementserien_test"
+    riksdagen_document_type="departementserien"
 )
 ra.start()
 # print(ra.df)

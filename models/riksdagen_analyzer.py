@@ -15,13 +15,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
+import config
 from models.riksdagen_document import RiksdagenDocument
 
 
 class RiksdagenAnalyzer(BaseModel):
-    # Replace 'path/to/your/directory' with the path to your directory containing the .txt files
-    workdirectory: str
-    filename: str
+    """This model extracts sentences from a supported riksdagen document type
+    and stores the result in both jsonl and pickle formats."""
+    riksdagen_document_type: str
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = 20
@@ -49,6 +50,14 @@ class RiksdagenAnalyzer(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+    @property
+    def workdirectory(self):
+        return config.supported_riksdagen_document_types[self.riksdagen_document_type]["workdirectory"]
+
+    @property
+    def filename(self):
+        return config.supported_riksdagen_document_types[self.riksdagen_document_type]["filename"]
 
     def start(self):
         self.read_json_from_disk()
