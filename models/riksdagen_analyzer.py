@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 import lzma
 import os
 import re
@@ -18,14 +19,17 @@ from tqdm import tqdm
 import config
 from models.riksdagen_document import RiksdagenDocument
 
+logger = logging.getLogger(__name__)
+
 
 class RiksdagenAnalyzer(BaseModel):
     """This model extracts sentences from a supported riksdagen document type
     and stores the result in both jsonl and pickle formats."""
+
     riksdagen_document_type: str
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = 20
+    max_documents_to_extract: int = config.max_documents_to_extract
     skipped_documents_count: int = 0
     additional_stop_words: List[str] = [
         "ska",
@@ -53,15 +57,19 @@ class RiksdagenAnalyzer(BaseModel):
 
     @property
     def workdirectory(self):
-        return config.supported_riksdagen_document_types[self.riksdagen_document_type]["workdirectory"]
+        return config.supported_riksdagen_document_types[self.riksdagen_document_type][
+            "workdirectory"
+        ]
 
     @property
     def filename(self):
-        return config.supported_riksdagen_document_types[self.riksdagen_document_type]["filename"]
+        return config.supported_riksdagen_document_types[self.riksdagen_document_type][
+            "filename"
+        ]
 
     def start(self):
         self.read_json_from_disk()
-        self.print_number_of_documents()
+        # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
         self.extract_sentences_from_all_documents()
         self.create_dataframe_with_all_sentences()
@@ -79,7 +87,7 @@ class RiksdagenAnalyzer(BaseModel):
 
     def print_number_of_skipped_documents(self):
         print(
-            f"Number of skipped documents "
+            f"Number of skipped JSON files "
             f"(because of missing or bad data): {self.skipped_documents_count}"
         )
 
@@ -322,17 +330,15 @@ class RiksdagenAnalyzer(BaseModel):
         self.df["md5_hash"] = self.df["sentence"].apply(self.generate_md5_hash)
 
     def extract_sentences_from_all_documents(self):
-        print("Extracting sentences from all documents")
         total_documents = min(len(self.documents), self.max_documents_to_extract)
         with tqdm(
-            total=total_documents, desc="Processing Documents", unit="doc"
+            total=total_documents, desc="Extracting sentences from all documents", unit="doc"
         ) as pbar_docs:
             for index, doc in enumerate(self.documents, 1):
                 if index > self.max_documents_to_extract:
                     print("max reached, stopping extraction")
                     break
                 pbar_docs.update(1)
-                tqdm.write(f"Processing document {index}/{len(self.documents)}")
                 doc.extract_sentences()
 
     def create_dataframe_with_all_sentences(self):
@@ -348,44 +354,46 @@ class RiksdagenAnalyzer(BaseModel):
         self.df = pd.DataFrame(data)
 
     def read_json_from_disk(self):
-        print("reading json from disk")
+        # print("reading json from disk")
+        file_paths = []
         for root, dirs, files in os.walk(self.workdirectory):
             for file in files:
                 if file.endswith(".json"):
-                    file_path = os.path.join(root, file)
-                    with open(file_path, "r", encoding="utf-8-sig") as json_file:
-                        try:
-                            data = json.load(json_file)
-                            # Check if expected keys exist
-                            if (
-                                "dokumentstatus" in data
-                                and "dokument" in data["dokumentstatus"]
-                            ):
-                                dok_id = data["dokumentstatus"]["dokument"].get(
-                                    "dok_id"
-                                )
-                                text = data["dokumentstatus"]["dokument"].get("text")
-                                html = data["dokumentstatus"]["dokument"].get("html")
+                    if len(file_paths) >= self.max_documents_to_extract:
+                        break
+                    file_paths.append(os.path.join(root, file))
 
-                                # Store content if available, even if one is missing
-                                if dok_id is not None and (
-                                    text is not None or html is not None
-                                ):
-                                    document = RiksdagenDocument(
-                                        id=dok_id, text=text or "", html=html or ""
-                                    )
-                                    self.documents.append(document)
-                                else:
-                                    self.skipped_documents_count += 1
-                                    print(
-                                        f"Skipping document {json_file}: Missing dok_id and (text or html)"
-                                    )
-                            else:
-                                print(
-                                    f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'"
-                                )
-                        except json.JSONDecodeError as e:
-                            print(f"Error loading JSON from {file_path}: {e}")
+        # Wrap the iteration with tqdm to display a progress bar
+        for file_path in tqdm(file_paths, desc="Processing JSON files"):
+            with open(file_path, "r", encoding="utf-8-sig") as json_file:
+                try:
+                    data = json.load(json_file)
+                    if (
+                        "dokumentstatus" in data
+                        and "dokument" in data["dokumentstatus"]
+                    ):
+                        dok_id = data["dokumentstatus"]["dokument"].get("dok_id")
+                        text = data["dokumentstatus"]["dokument"].get("text")
+                        html = data["dokumentstatus"]["dokument"].get("html")
+
+                        if dok_id is not None and (
+                            text is not None or html is not None
+                        ):
+                            document = RiksdagenDocument(
+                                id=dok_id, text=text or "", html=html or ""
+                            )
+                            self.documents.append(document)
+                        else:
+                            self.skipped_documents_count += 1
+                            print(
+                                f"Skipping document {json_file}: Missing dok_id and (text or html)"
+                            )
+                    else:
+                        print(
+                            f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'"
+                        )
+                except json.JSONDecodeError as e:
+                    print(f"Error loading JSON from {file_path}: {e}")
 
     def print_number_of_documents(self):
         # Print or use the variable containing all text

@@ -39,3 +39,4 @@ for the first time and it is very nice :)
 * working on millions of sentences with NLP takes time even on a fast machine 
 like my 8th gen 8-core i5 laptop
 * langdetect is slow and only utilizes 1 CPU
+* it's so nice to work with classes and small methods and combining them in ways that makes sense. KISS!

@@ -1,8 +1,11 @@
+import logging
 from typing import List
 
 import spacy
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class RiksdagenDocument(BaseModel):
@@ -53,18 +56,18 @@ class RiksdagenDocument(BaseModel):
         nlp = spacy.load("sv_core_news_sm")
 
         # Displaying the word count
-        print(f"Number of words before tokenization: {self.count_words}")
+        logger.info(f"Number of words before tokenization: {self.count_words}")
 
         # Chunk the text
         self.chunk_text()
 
         # Display the number of chunks
-        print(f"Number of chunks: {self.number_of_chunks}")
+        logger.info(f"Number of chunks: {self.number_of_chunks}")
 
         # Process each chunk separately
         count = 1
         for chunk in self.chunks:
-            print(f"loading chunk {count}/{self.number_of_chunks}")
+            logger.info(f"loading chunk {count}/{self.number_of_chunks}")
             doc = nlp(chunk)
 
             # Filter out sentences consisting only of newline characters
@@ -73,4 +76,4 @@ class RiksdagenDocument(BaseModel):
 
             count += 1
 
-        print(f"Extracted {len(self.sentences)} sentences")
+        logger.info(f"Extracted {len(self.sentences)} sentences")
