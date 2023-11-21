@@ -1,6 +1,8 @@
+import argparse
 import hashlib
 import json
 import logging
+import lzma
 import os
 import re
 import string
@@ -25,12 +27,14 @@ class RiksdagenAnalyzer(BaseModel):
     """This model extracts sentences from a supported riksdagen document type
     and stores the result in both jsonl and pickle formats."""
 
-    riksdagen_document_type: str
+    riksdagen_document_type: str = ""
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = config.max_documents_to_extract
     skipped_documents_count: int = 0
     token_count: int = 0
+    parser: argparse.ArgumentParser = argparse.ArgumentParser()
+    jsonl_path_to_load: str = ""
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -82,9 +86,24 @@ class RiksdagenAnalyzer(BaseModel):
         # self.save()
         # self.generate_document_term_matix()
 
-    def load_pickle(self):
-        """Load pickle from disk to be able to work on it"""
-        self.df = pd.read_pickle(f"{self.filename}.pickle.xz")
+    def load_jsonl(self):
+        """Load jsonl from disk to be able to work on it"""
+        self.setup_argparse()
+        args = self.parser.parse_args()
+        if args.load_jsonl:
+            print('JSONL file will be loaded.')
+            if "xz" in args.load_jsonl:
+                # Decompress the xz file
+                with lzma.open(args.load_jsonl, 'rb') as compressed_file:
+                    # Read the decompressed JSONL data
+                    decompressed_data = compressed_file.read().decode('utf-8')
+
+                # Convert the JSON lines data into a DataFrame
+                self.df = pd.read_json(decompressed_data, lines=True)
+            else:
+                self.df = pd.read_json(args.load_jsonl, lines=True)
+        else:
+            print('JSONL file loading not requested.')
 
     def print_number_of_skipped_documents(self):
         print(
@@ -261,8 +280,8 @@ class RiksdagenAnalyzer(BaseModel):
     def print_statistics(self):
         print("Statistics:")
         # Counting total number of rows
-        total_rows = self.df.shape[0]
-        print("Total number of sentences:", total_rows)
+        total_sentences = self.df.shape[0]
+        print("Total number of sentences:", total_sentences)
 
         # Count the number of empty sentences
         empty_sentences_count = (self.df["sentence"].str.strip() == "").sum()
@@ -271,23 +290,36 @@ class RiksdagenAnalyzer(BaseModel):
         # Counting rows where 'suitable' column is True
         suitable_count = self.df[self.df["suitable"] == True].shape[0]
         print("Number of suitable sentences:", suitable_count)
-        suitable_percentage = (suitable_count / total_rows) * 100
+        suitable_percentage = (suitable_count / total_sentences) * 100
         print("Percentage suitable sentences:", round(suitable_percentage))
+
+        # Tokens
+        try:
+            total_tokens = self.df['tokens'].sum()
+            print("Total sum of 'tokens' column:", total_tokens)
+            # Calculate the mean number of tokens per sentence
+            mean_tokens_per_sentence = total_tokens / total_sentences
+            print("Mean number of tokens per sentence:", mean_tokens_per_sentence)
+        except KeyError:
+            pass
 
         # Counting and displaying the distribution of language codes
         language_distribution = self.df["langdetect"].value_counts()
         # Calculating percentages
-        en_percentage = (language_distribution["en"] / total_rows) * 100
-        sv_percentage = (language_distribution["sv"] / total_rows) * 100
-        print("Percentage of 'en' (English) sentences:", round(en_percentage))
-        print("Percentage of 'sv' (Swedish) sentences:", round(sv_percentage))
-        print("Language code distribution:")
-        print(language_distribution)
+        try:
+            en_percentage = (language_distribution["en"] / total_sentences) * 100
+            sv_percentage = (language_distribution["sv"] / total_sentences) * 100
+            print("Percentage of 'en' (English) sentences:", round(en_percentage))
+            print("Percentage of 'sv' (Swedish) sentences:", round(sv_percentage))
+            print("Language code distribution:")
+            print(language_distribution)
+        except KeyError:
+            pass
 
     def save(self):
         # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
         # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
-        self.append_to_jsonl(self.df)
+        self.append_to_jsonl()
 
         # Save a version with only rows where 'suitable' is True
         # suitable_rows = self.df[self.df["suitable"]]
@@ -296,7 +328,7 @@ class RiksdagenAnalyzer(BaseModel):
         # self.save_as_jsonl(suitable_rows, suitable=True)
 
     def create_suitable_jsonl(self):
-        # TODO
+        # TODO go through the jsonl line by line and save all lines with suitable=True to a new file
         pass
 
     def append_to_jsonl(self):
@@ -315,18 +347,21 @@ class RiksdagenAnalyzer(BaseModel):
         with jsonlines.open(filename, mode="a") as writer:
             writer.write_all(data)
 
+    def compress_jsonl(self):
         # Compress the JSONL file with xz
-        # with open(filename, "rb") as jsonl_file:
-        #     with lzma.open(f"{filename}.xz", "wb") as xz_file:
-        #         for line in jsonl_file:
-        #             xz_file.write(line)
-        # os.remove(filename)
+        with open(f"{self.filename}.jsonl", "rb") as jsonl_file:
+            with lzma.open(f"{self.filename}.jsonl.xz", "wb") as xz_file:
+                for line in jsonl_file:
+                    xz_file.write(line)
+
+    # def remove_uncompressed_jsonl(self):
+    #     os.remove(self.filename)
 
     @staticmethod
     def generate_md5_hash(sentence):
         return hashlib.md5(sentence.encode()).hexdigest()
 
-    def generate_ids(self):
+    def generate_id_and_hash(self):
         # Generate UUIDs for each sentence and add them to a new 'uuid' column
         self.df["uuid"] = [str(uuid.uuid4()) for _ in range(len(self.df))]
 
@@ -349,12 +384,13 @@ class RiksdagenAnalyzer(BaseModel):
     def create_dataframe_with_all_sentences(self):
         print("creating dataframe")
         # Creating DataFrame
-        data = {"id": [], "sentence": []}
+        data = {"id": [], "sentence": [], "tokens": 0}
 
         for doc in self.documents:
             for sentence in doc.sentences:
                 data["id"].append(doc.id)
                 data["sentence"].append(sentence)
+                data["tokens"] = doc.token_count
 
         self.df = pd.DataFrame(data)
 
@@ -392,7 +428,7 @@ class RiksdagenAnalyzer(BaseModel):
                             self.print_number_of_tokens()
                             self.documents.append(document)
                             self.create_dataframe_with_all_sentences()
-                            self.generate_ids()
+                            self.generate_id_and_hash()
                             self.strip_newlines()
                             self.determine_suitability()
                             self.determine_language()
@@ -419,3 +455,7 @@ class RiksdagenAnalyzer(BaseModel):
     def print_number_of_tokens(self):
         # Print or use the variable containing all text
         print(f"Total number of tokens: {self.token_count}")
+
+    def setup_argparse(self):
+        self.parser = argparse.ArgumentParser(description='Parse JSONL file')
+        self.parser.add_argument("-l", '--load-jsonl', type=str, help='Load JSONL file', required=True)
