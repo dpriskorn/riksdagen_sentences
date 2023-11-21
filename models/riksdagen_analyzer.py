@@ -20,11 +20,11 @@ from models.riksdagen_document import RiksdagenDocument
 
 class RiksdagenAnalyzer(BaseModel):
     # Replace 'path/to/your/directory' with the path to your directory containing the .txt files
-    workdirectory: str = "data/sv"
-    filename: str = "departementserien_test"
+    workdirectory: str
+    filename: str
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = 2
+    max_documents_to_extract: int = 20
     skipped_documents_count: int = 0
     additional_stop_words: List[str] = [
         "ska",
@@ -44,7 +44,7 @@ class RiksdagenAnalyzer(BaseModel):
         "rätt",
         "ds",
         "d",
-        "bör"
+        "bör",
     ]
 
     class Config:
@@ -69,8 +69,10 @@ class RiksdagenAnalyzer(BaseModel):
         self.df = pd.read_pickle(f"{self.filename}.pickle.xz")
 
     def print_number_of_skipped_documents(self):
-        print(f"Number of skipped documents "
-              f"(because of missing or bad data): {self.skipped_documents_count}")
+        print(
+            f"Number of skipped documents "
+            f"(because of missing or bad data): {self.skipped_documents_count}"
+        )
 
     @staticmethod
     def detect_language(text):
@@ -79,18 +81,24 @@ class RiksdagenAnalyzer(BaseModel):
             try:
                 return detect(text)
             except:
-                return 'Unknown'  # Handle cases where language detection fails
+                return "Unknown"  # Handle cases where language detection fails
         else:
-            return 'Less than 5 words'
+            return "Less than 5 words"
 
     def determine_language(self):
         # TODO can this be parallelized to use more than 1 cpu?
         print("Determining language for suitable sentences")
-        suitable_sentences = self.df[self.df['suitable']]['sentence']
+        suitable_sentences = self.df[self.df["suitable"]]["sentence"]
 
         # Use tqdm to show progress while applying language detection
-        for idx in tqdm(suitable_sentences.index, desc="Detecting language", total=len(suitable_sentences)):
-            self.df.at[idx, 'langdetect'] = self.detect_language(self.df.at[idx, 'sentence'])
+        for idx in tqdm(
+            suitable_sentences.index,
+            desc="Detecting language",
+            total=len(suitable_sentences),
+        ):
+            self.df.at[idx, "langdetect"] = self.detect_language(
+                self.df.at[idx, "sentence"]
+            )
 
     @staticmethod
     def create_plot(name: str, df: DataFrame):
@@ -111,7 +119,9 @@ class RiksdagenAnalyzer(BaseModel):
         plt.xlabel("Words")
         plt.ylabel("Frequency")
         # fix for readability:
-        plt.xticks(rotation=45, ha="right")  # Rotate x-axis labels for better readability
+        plt.xticks(
+            rotation=45, ha="right"
+        )  # Rotate x-axis labels for better readability
         plt.tight_layout()
         plt.subplots_adjust(bottom=0.3)  # Increase space below bars
         # Save the plot to disk
@@ -150,14 +160,19 @@ class RiksdagenAnalyzer(BaseModel):
         print("calculating trigrams")
         trigram_vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words=stop_words)
         data_cv_trigram = trigram_vectorizer.fit_transform(data_clean.sentence)
-        data_dtm_trigram = pd.DataFrame(data_cv_trigram.toarray(), columns=trigram_vectorizer.get_feature_names_out())
+        data_dtm_trigram = pd.DataFrame(
+            data_cv_trigram.toarray(),
+            columns=trigram_vectorizer.get_feature_names_out(),
+        )
         # data_dtm_trigram.to_csv("trigram_document-term_matrix.csv")
 
         # Create a bigram vectorizer
         print("calculating bigrams")
         bigram_vectorizer = CountVectorizer(ngram_range=(2, 2), stop_words=stop_words)
         data_cv_bigram = bigram_vectorizer.fit_transform(data_clean.sentence)
-        data_dtm_bigram = pd.DataFrame(data_cv_bigram.toarray(), columns=bigram_vectorizer.get_feature_names_out())
+        data_dtm_bigram = pd.DataFrame(
+            data_cv_bigram.toarray(), columns=bigram_vectorizer.get_feature_names_out()
+        )
         # data_dtm_bigram.to_csv("bigram_document-term_matrix.csv")
 
         # monogram vectorizer
@@ -198,8 +213,17 @@ class RiksdagenAnalyzer(BaseModel):
 
     @staticmethod
     def suitable_sentence(sentence):
+        # Removing punctuation
+        sentence_without_punctuation = "".join(
+            char for char in sentence if char not in string.punctuation
+        )
+
         # Split the sentence into words and remove words containing numbers
-        words = [word for word in sentence.split() if not any(char.isdigit() for char in word)]
+        words = [
+            word
+            for word in sentence_without_punctuation.split()
+            if not any(char.isdigit() for char in word)
+        ]
 
         # Check if the sentence has more than 5 words after removing numeric words
         if len(words) > 5:
@@ -223,20 +247,20 @@ class RiksdagenAnalyzer(BaseModel):
         print("Total number of sentences:", total_rows)
 
         # Count the number of empty sentences
-        empty_sentences_count = (self.df['sentence'].str.strip() == '').sum()
+        empty_sentences_count = (self.df["sentence"].str.strip() == "").sum()
         print(f"Number of empty sentences: {empty_sentences_count}")
 
         # Counting rows where 'suitable' column is True
-        suitable_count = self.df[self.df['suitable'] == True].shape[0]
+        suitable_count = self.df[self.df["suitable"] == True].shape[0]
         print("Number of suitable sentences:", suitable_count)
         suitable_percentage = (suitable_count / total_rows) * 100
         print("Percentage suitable sentences:", round(suitable_percentage))
 
         # Counting and displaying the distribution of language codes
-        language_distribution = self.df['langdetect'].value_counts()
+        language_distribution = self.df["langdetect"].value_counts()
         # Calculating percentages
-        en_percentage = (language_distribution['en'] / total_rows) * 100
-        sv_percentage = (language_distribution['sv'] / total_rows) * 100
+        en_percentage = (language_distribution["en"] / total_rows) * 100
+        sv_percentage = (language_distribution["sv"] / total_rows) * 100
         print("Percentage of 'en' (English) sentences:", round(en_percentage))
         print("Percentage of 'sv' (Swedish) sentences:", round(sv_percentage))
         print("Language code distribution:")
@@ -248,7 +272,7 @@ class RiksdagenAnalyzer(BaseModel):
         self.save_as_jsonl(self.df)
 
         # Save a version with only rows where 'suitable' is True
-        suitable_rows = self.df[self.df['suitable']]
+        suitable_rows = self.df[self.df["suitable"]]
         suitable_rows.to_pickle(f"{self.filename}_suitable.pickle.xz", compression="xz")
         suitable_rows.to_csv(f"{self.filename}_suitable.csv.xz", compression="xz")
         self.save_as_jsonl(suitable_rows, suitable=True)
@@ -258,20 +282,20 @@ class RiksdagenAnalyzer(BaseModel):
         # Replace 'your_data.jsonl' with the desired filename
 
         # Convert DataFrame to list of dictionaries
-        data = df.to_dict(orient='records')
+        data = df.to_dict(orient="records")
 
         if suitable:
-            filename = f'{self.filename}_suitable.jsonl'
+            filename = f"{self.filename}_suitable.jsonl"
         else:
-            filename = f'{self.filename}.jsonl'
+            filename = f"{self.filename}.jsonl"
 
         # Write data to a JSONL file
-        with jsonlines.open(filename, mode='w') as writer:
+        with jsonlines.open(filename, mode="w") as writer:
             writer.write_all(data)
 
         # Compress the JSONL file with xz
-        with open(filename, 'rb') as jsonl_file:
-            with lzma.open(f'{filename}.xz', 'wb') as xz_file:
+        with open(filename, "rb") as jsonl_file:
+            with lzma.open(f"{filename}.xz", "wb") as xz_file:
                 for line in jsonl_file:
                     xz_file.write(line)
         os.remove(filename)
@@ -282,16 +306,18 @@ class RiksdagenAnalyzer(BaseModel):
 
     def generate_ids(self):
         # Generate UUIDs for each sentence and add them to a new 'uuid' column
-        self.df['uuid'] = [str(uuid.uuid4()) for _ in range(len(self.df))]
+        self.df["uuid"] = [str(uuid.uuid4()) for _ in range(len(self.df))]
 
         # Generate MD5 hash for each sentence and add them to a new 'md5_hash' column
 
-        self.df['md5_hash'] = self.df['sentence'].apply(self.generate_md5_hash)
+        self.df["md5_hash"] = self.df["sentence"].apply(self.generate_md5_hash)
 
     def extract_sentences_from_all_documents(self):
         print("Extracting sentences from all documents")
         total_documents = min(len(self.documents), self.max_documents_to_extract)
-        with tqdm(total=total_documents, desc="Processing Documents", unit="doc") as pbar_docs:
+        with tqdm(
+            total=total_documents, desc="Processing Documents", unit="doc"
+        ) as pbar_docs:
             for index, doc in enumerate(self.documents, 1):
                 if index > self.max_documents_to_extract:
                     print("max reached, stopping extraction")
@@ -303,15 +329,12 @@ class RiksdagenAnalyzer(BaseModel):
     def create_dataframe_with_all_sentences(self):
         print("creating dataframe")
         # Creating DataFrame
-        data = {
-            'id': [],
-            'sentence': []
-        }
+        data = {"id": [], "sentence": []}
 
         for doc in self.documents:
             for sentence in doc.sentences:
-                data['id'].append(doc.id)
-                data['sentence'].append(sentence)
+                data["id"].append(doc.id)
+                data["sentence"].append(sentence)
 
         self.df = pd.DataFrame(data)
 
@@ -325,20 +348,33 @@ class RiksdagenAnalyzer(BaseModel):
                         try:
                             data = json.load(json_file)
                             # Check if expected keys exist
-                            if 'dokumentstatus' in data and 'dokument' in data['dokumentstatus']:
-                                dok_id = data['dokumentstatus']['dokument'].get('dok_id')
-                                text = data['dokumentstatus']['dokument'].get('text')
-                                html = data['dokumentstatus']['dokument'].get('html')
+                            if (
+                                "dokumentstatus" in data
+                                and "dokument" in data["dokumentstatus"]
+                            ):
+                                dok_id = data["dokumentstatus"]["dokument"].get(
+                                    "dok_id"
+                                )
+                                text = data["dokumentstatus"]["dokument"].get("text")
+                                html = data["dokumentstatus"]["dokument"].get("html")
 
                                 # Store content if available, even if one is missing
-                                if dok_id is not None and (text is not None or html is not None):
-                                    document = RiksdagenDocument(id=dok_id, text=text or "", html=html or "")
+                                if dok_id is not None and (
+                                    text is not None or html is not None
+                                ):
+                                    document = RiksdagenDocument(
+                                        id=dok_id, text=text or "", html=html or ""
+                                    )
                                     self.documents.append(document)
                                 else:
                                     self.skipped_documents_count += 1
-                                    print(f"Skipping document {json_file}: Missing dok_id and (text or html)")
+                                    print(
+                                        f"Skipping document {json_file}: Missing dok_id and (text or html)"
+                                    )
                             else:
-                                print(f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'")
+                                print(
+                                    f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'"
+                                )
                         except json.JSONDecodeError as e:
                             print(f"Error loading JSON from {file_path}: {e}")
 
