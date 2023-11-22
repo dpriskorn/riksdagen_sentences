@@ -35,6 +35,7 @@ class RiksdagenAnalyzer(BaseModel):
     token_count: int = 0
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     jsonl_path_to_load: str = ""
+    arguments: argparse.Namespace = argparse.Namespace()
     additional_stop_words: List[str] = [
         "ska",
         "enligt",
@@ -86,24 +87,25 @@ class RiksdagenAnalyzer(BaseModel):
         # self.save()
         # self.generate_document_term_matix()
 
+    def handle_arguments(self):
+        self.setup_argparse()
+        self.arguments = self.parser.parse_args()
+        if self.arguments.load_jsonl:
+            self.load_jsonl()
+
     def load_jsonl(self):
         """Load jsonl from disk to be able to work on it"""
-        self.setup_argparse()
-        args = self.parser.parse_args()
-        if args.load_jsonl:
-            print('JSONL file will be loaded.')
-            if "xz" in args.load_jsonl:
-                # Decompress the xz file
-                with lzma.open(args.load_jsonl, 'rb') as compressed_file:
-                    # Read the decompressed JSONL data
-                    decompressed_data = compressed_file.read().decode('utf-8')
+        print('JSONL file will be loaded.')
+        if "xz" in self.arguments.load_jsonl:
+            # Decompress the xz file
+            with lzma.open(self.arguments.load_jsonl, 'rb') as compressed_file:
+                # Read the decompressed JSONL data
+                decompressed_data = compressed_file.read().decode('utf-8')
 
-                # Convert the JSON lines data into a DataFrame
-                self.df = pd.read_json(decompressed_data, lines=True)
-            else:
-                self.df = pd.read_json(args.load_jsonl, lines=True)
+            # Convert the JSON lines data into a DataFrame
+            self.df = pd.read_json(decompressed_data, lines=True)
         else:
-            print('JSONL file loading not requested.')
+            self.df = pd.read_json(self.arguments.load_jsonl, lines=True)
 
     def print_number_of_skipped_documents(self):
         print(
@@ -394,6 +396,9 @@ class RiksdagenAnalyzer(BaseModel):
 
         self.df = pd.DataFrame(data)
 
+    def dataframe_is_empty(self) -> bool:
+        return self.df.empty
+
     def read_json_from_disk_and_extract(self):
         # print("reading json from disk")
         file_paths = []
@@ -428,11 +433,12 @@ class RiksdagenAnalyzer(BaseModel):
                             self.print_number_of_tokens()
                             self.documents.append(document)
                             self.create_dataframe_with_all_sentences()
-                            self.generate_id_and_hash()
-                            self.strip_newlines()
-                            self.determine_suitability()
-                            self.determine_language()
-                            self.append_to_jsonl()
+                            if not self.dataframe_is_empty():
+                                self.generate_id_and_hash()
+                                self.strip_newlines()
+                                self.determine_suitability()
+                                self.determine_language()
+                                self.append_to_jsonl()
                             # Reset documents to avoid getting killed by the 
                             # kernel because we run out of memory
                             self.documents = []
