@@ -12,5 +12,4 @@ supported_riksdagen_document_types = {
         "wikidata_qid": "Q123501430",
     },
 }
-loglevel = logging.WARNING
-max_documents_to_extract = 20000 # proposition contains ~11000 documents in total
+loglevel = logging.INFO

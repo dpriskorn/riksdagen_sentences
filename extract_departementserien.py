@@ -7,5 +7,5 @@ logging.basicConfig(level=config.loglevel)
 
 
 ra = RiksdagenAnalyzer(riksdagen_document_type="departementserien")
-ra.start()
+ra.start_analyzing()
 # print(ra.df)

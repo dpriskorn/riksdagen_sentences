@@ -5,6 +5,8 @@ import spacy
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
+from models.sentence import Sentence
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,8 +19,11 @@ class RiksdagenDocument(BaseModel):
     html: str = ""
     chunk_size: int = 100000
     chunks: List[str] = list()
-    sentences: List[str] = list()
-    token_count: int = 0
+    sentences: List[Sentence] = list()
+
+    @property
+    def token_count(self) -> int:
+        return sum([sent.token_count for sent in self.sentences])
 
     @property
     def count_words(self) -> int:
@@ -72,14 +77,12 @@ class RiksdagenDocument(BaseModel):
             doc = nlp(chunk)
 
             # Filter out sentences consisting only of newline characters
-            filtered_sentences = [sent.text for sent in doc.sents if sent.text.strip()]
+            filtered_sentences = [
+                Sentence(text=sent.text, token_count=len(sent.text.split()))
+                for sent in doc.sents
+                if sent.text.strip()
+            ]
             self.sentences.extend(filtered_sentences)
-
-            # Count tokens in each sentence
-            for sent in filtered_sentences:
-                sent_doc = nlp(sent)
-                self.token_count += len(sent_doc)
-
             count += 1
 
         logger.info(f"Extracted {len(self.sentences)} sentences")

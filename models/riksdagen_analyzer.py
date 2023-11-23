@@ -30,8 +30,9 @@ class RiksdagenAnalyzer(BaseModel):
     riksdagen_document_type: str = ""
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
-    max_documents_to_extract: int = config.max_documents_to_extract
+    max_documents_to_extract: int = 0  # zero means no limit
     skipped_documents_count: int = 0
+    document_offset: int = 0
     token_count: int = 0
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     jsonl_path_to_load: str = ""
@@ -61,7 +62,7 @@ class RiksdagenAnalyzer(BaseModel):
         arbitrary_types_allowed = True
 
     @property
-    def workdirectory(self):
+    def workdirectory(self) -> str:
         return config.supported_riksdagen_document_types[self.riksdagen_document_type][
             "workdirectory"
         ]
@@ -72,13 +73,13 @@ class RiksdagenAnalyzer(BaseModel):
             "filename"
         ]
 
-    def start(self):
+    def start_analyzing(self):
         self.read_json_from_disk_and_extract()
         # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
         self.print_number_of_tokens()
-        #self.extract_sentences_from_all_documents()
-        #self.create_dataframe_with_all_sentences()
+        # self.extract_sentences_from_all_documents()
+        # self.create_dataframe_with_all_sentences()
         # self.generate_ids()
         # self.strip_newlines()
         # self.determine_suitability()
@@ -92,15 +93,22 @@ class RiksdagenAnalyzer(BaseModel):
         self.arguments = self.parser.parse_args()
         if self.arguments.load_jsonl:
             self.load_jsonl()
+        if self.arguments.max:
+            self.max_documents_to_extract = self.arguments.max
+        if self.arguments.offset:
+            self.document_offset = self.arguments.offset
+        if self.arguments.analyze:
+            self.riksdagen_document_type = self.arguments.analyze
+            self.start_analyzing()
 
     def load_jsonl(self):
         """Load jsonl from disk to be able to work on it"""
-        print('JSONL file will be loaded.')
+        print("JSONL file will be loaded.")
         if "xz" in self.arguments.load_jsonl:
             # Decompress the xz file
-            with lzma.open(self.arguments.load_jsonl, 'rb') as compressed_file:
+            with lzma.open(self.arguments.load_jsonl, "rb") as compressed_file:
                 # Read the decompressed JSONL data
-                decompressed_data = compressed_file.read().decode('utf-8')
+                decompressed_data = compressed_file.read().decode("utf-8")
 
             # Convert the JSON lines data into a DataFrame
             self.df = pd.read_json(decompressed_data, lines=True)
@@ -297,7 +305,7 @@ class RiksdagenAnalyzer(BaseModel):
 
         # Tokens
         try:
-            total_tokens = self.df['tokens'].sum()
+            total_tokens = self.df["tokens"].sum()
             print("Total sum of 'tokens' column:", total_tokens)
             # Calculate the mean number of tokens per sentence
             mean_tokens_per_sentence = total_tokens / total_sentences
@@ -391,8 +399,8 @@ class RiksdagenAnalyzer(BaseModel):
         for doc in self.documents:
             for sentence in doc.sentences:
                 data["id"].append(doc.id)
-                data["sentence"].append(sentence)
-                data["tokens"] = doc.token_count
+                data["sentence"].append(sentence.text)
+                data["tokens"] = sentence.token_count
 
         self.df = pd.DataFrame(data)
 
@@ -405,12 +413,23 @@ class RiksdagenAnalyzer(BaseModel):
         for root, dirs, files in os.walk(self.workdirectory):
             for file in files:
                 if file.endswith(".json"):
-                    if len(file_paths) >= self.max_documents_to_extract:
-                        break
                     file_paths.append(os.path.join(root, file))
 
+        logger.info(f"Number of filepaths found: {len(file_paths)}")
+
+        # Handle offset
+        file_paths = file_paths[self.document_offset :]
+        # print(file_paths[:1])
+        # exit()
+        logger.info(f"Number of filepaths after offset: {len(file_paths)}")
+
         # Wrap the iteration with tqdm to display a progress bar
+        count = 0
         for file_path in tqdm(file_paths, desc="Processing JSON files"):
+            # Only break if max_documents_to_extract is different from 0
+            if self.max_documents_to_extract and count >= self.max_documents_to_extract:
+                logger.info("Max documents limit reached.")
+                break
             with open(file_path, "r", encoding="utf-8-sig") as json_file:
                 try:
                     data = json.load(json_file)
@@ -429,7 +448,7 @@ class RiksdagenAnalyzer(BaseModel):
                                 id=dok_id, text=text or "", html=html or ""
                             )
                             document.extract_sentences()
-                            self.token_count = + document.token_count
+                            self.token_count = +document.token_count
                             self.print_number_of_tokens()
                             self.documents.append(document)
                             self.create_dataframe_with_all_sentences()
@@ -439,7 +458,13 @@ class RiksdagenAnalyzer(BaseModel):
                                 self.determine_suitability()
                                 self.determine_language()
                                 self.append_to_jsonl()
-                            # Reset documents to avoid getting killed by the 
+                            else:
+                                logger.warning(
+                                    f"Document with id {document.id} with path "
+                                    f"{file_path} did not have any sentences"
+                                )
+                                self.skipped_documents_count += 1
+                            # Reset documents to avoid getting killed by the
                             # kernel because we run out of memory
                             self.documents = []
                         else:
@@ -453,6 +478,7 @@ class RiksdagenAnalyzer(BaseModel):
                         )
                 except json.JSONDecodeError as e:
                     logger.error(f"Error loading JSON from {file_path}: {e}")
+                count = +1
 
     def print_number_of_documents(self):
         # Print or use the variable containing all text
@@ -463,5 +489,19 @@ class RiksdagenAnalyzer(BaseModel):
         print(f"Total number of tokens: {self.token_count}")
 
     def setup_argparse(self):
-        self.parser = argparse.ArgumentParser(description='Parse JSONL file')
-        self.parser.add_argument("-l", '--load-jsonl', type=str, help='Load JSONL file', required=True)
+        self.parser = argparse.ArgumentParser(description="Parse JSONL file")
+        self.parser.add_argument(
+            "-l", "--load-jsonl", type=str, help="Load JSONL file", required=False
+        )
+        self.parser.add_argument(
+            "--offset", type=int, help="Document offset", required=False
+        )
+        self.parser.add_argument(
+            "--max", type=int, help="Max documents to process", required=False
+        )
+        self.parser.add_argument(
+            "--analyze",
+            type=str,
+            help="Analyze a document series. One of ['departementserien', 'proposition']",
+            required=False,
+        )
