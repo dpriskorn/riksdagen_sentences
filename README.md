@@ -21,6 +21,22 @@ As better sentenizing becomes available or Riksdagen improve their data over tim
 * linkable (the individual sentences are not planned to be linkable at this stage, but the release is and line numbers 
 or UUIDs can be used to link with no ambiguity)
 
+## Installation
+Clone the repo
+
+Run
+
+`$ pip install poetry && poetry install`
+
+Also download the model needed
+
+`$ python -m spacy download sv_core_news_lg`
+(250 MB)
+
+## Use
+Example
+`$ python riksdagen_analyzer --analyze proposition`
+
 ## Sources
 https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
 

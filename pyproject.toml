@@ -22,9 +22,6 @@ beautifulsoup4 = "^4.12.2"
 lxml = "^4.9.3"
 fasttext-langdetect = { git = "https://github.com/dpriskorn/fasttext-langdetect.git", branch = "main"}
 dask = "^2023.11.0"
-spacy-transformers = "^1.3.3"
-#swedish-spacy-pipeline = { http = "https://huggingface.co/KBLab/swedish-spacy-pipeline/tree/main", branch="main" }
-
 
 
 [tool.poetry.group.dev.dependencies]

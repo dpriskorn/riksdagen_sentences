@@ -61,7 +61,7 @@ class RiksdagenDocument(BaseModel):
             self.convert_html_to_text()
 
         # Load the Swedish language model
-        nlp = spacy.load("sv_core_news_sm")
+        nlp = spacy.load("sv_core_news_lg")
 
         # Displaying the word count
         logger.info(f"Number of words before tokenization: {self.count_words}")
