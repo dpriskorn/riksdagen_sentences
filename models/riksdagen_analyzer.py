@@ -4,20 +4,19 @@ import json
 import logging
 import lzma
 import os
-import re
 import string
 import uuid
-from typing import List
+from typing import List, Dict
 
 import jsonlines
-from langdetect import detect
+from ftlangdetect import detect
 from pandas import DataFrame
 from pydantic import BaseModel
 import pandas as pd
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 import config
+from models.RiksdagenJsonl import RiksdagenJsonFileProcessor
 from models.riksdagen_document import RiksdagenDocument
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class RiksdagenAnalyzer(BaseModel):
     """This model extracts sentences from a supported riksdagen document type
-    and stores the result in both jsonl and pickle formats."""
+    and stores the result in a jsonl format."""
 
     riksdagen_document_type: str = ""
     documents: List[RiksdagenDocument] = []
@@ -37,26 +36,6 @@ class RiksdagenAnalyzer(BaseModel):
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     jsonl_path_to_load: str = ""
     arguments: argparse.Namespace = argparse.Namespace()
-    additional_stop_words: List[str] = [
-        "ska",
-        "enligt",
-        "även",
-        "samt",
-        "finns",
-        "får",
-        "också",
-        "kap",
-        "vis",
-        "andra",
-        "genom",
-        "innebär",
-        "in",
-        "dock",
-        "rätt",
-        "ds",
-        "d",
-        "bör",
-    ]
 
     class Config:
         arbitrary_types_allowed = True
@@ -78,21 +57,16 @@ class RiksdagenAnalyzer(BaseModel):
         # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
         self.print_number_of_tokens()
-        # self.extract_sentences_from_all_documents()
-        # self.create_dataframe_with_all_sentences()
-        # self.generate_ids()
-        # self.strip_newlines()
-        # self.determine_suitability()
-        # self.determine_language()
-        # self.print_statistics()
-        # self.save()
         # self.generate_document_term_matix()
 
     def handle_arguments(self):
         self.setup_argparse()
         self.arguments = self.parser.parse_args()
         if self.arguments.load_jsonl:
-            self.load_jsonl()
+            json_processor = RiksdagenJsonFileProcessor(
+                file_path=self.arguments.load_jsonl
+            )
+            json_processor.process_json()
         if self.arguments.max:
             self.max_documents_to_extract = self.arguments.max
         if self.arguments.offset:
@@ -101,20 +75,6 @@ class RiksdagenAnalyzer(BaseModel):
             self.riksdagen_document_type = self.arguments.analyze
             self.start_analyzing()
 
-    def load_jsonl(self):
-        """Load jsonl from disk to be able to work on it"""
-        print("JSONL file will be loaded.")
-        if "xz" in self.arguments.load_jsonl:
-            # Decompress the xz file
-            with lzma.open(self.arguments.load_jsonl, "rb") as compressed_file:
-                # Read the decompressed JSONL data
-                decompressed_data = compressed_file.read().decode("utf-8")
-
-            # Convert the JSON lines data into a DataFrame
-            self.df = pd.read_json(decompressed_data, lines=True)
-        else:
-            self.df = pd.read_json(self.arguments.load_jsonl, lines=True)
-
     def print_number_of_skipped_documents(self):
         print(
             f"Number of skipped JSON files "
@@ -122,18 +82,11 @@ class RiksdagenAnalyzer(BaseModel):
         )
 
     @staticmethod
-    def detect_language(text):
-        word_count = len(text.split())  # Split by spaces and count words
-        if word_count > 5:
-            try:
-                return detect(text)
-            except:
-                return "Unknown"  # Handle cases where language detection fails
-        else:
-            return "Less than 5 words"
+    def detect_language(text) -> Dict[str, float]:
+        # This returns a dict like so: {'lang': 'tr', 'score': 0.9982126951217651}
+        return detect(text=text.replace("\n", ""), low_memory=False)
 
-    def determine_language(self):
-        # TODO can this be parallelized to use more than 1 cpu?
+    def detect_language_for_all_sentences(self):
         print("Determining language for suitable sentences")
         suitable_sentences = self.df[self.df["suitable"]]["sentence"]
 
@@ -143,120 +96,11 @@ class RiksdagenAnalyzer(BaseModel):
             desc="Detecting language",
             total=len(suitable_sentences),
         ):
-            self.df.at[idx, "langdetect"] = self.detect_language(
+            language_detection_result = self.detect_language(
                 self.df.at[idx, "sentence"]
             )
-
-    @staticmethod
-    def create_plot(name: str, df: DataFrame):
-        # Create a DataFrame of word frequencies
-        word_freq = df
-
-        # Sum the frequencies of each word
-        word_freq_sum = word_freq.sum()
-
-        # Sort words by frequency in descending order
-        word_freq_sum = word_freq_sum.sort_values(ascending=False)
-
-        # Plotting the top 10 most frequent words
-
-        top_words = word_freq_sum.head(10)
-        top_words.plot(kind="bar", figsize=(10, 6))
-        plt.title("Top 10 Most Frequent Words")
-        plt.xlabel("Words")
-        plt.ylabel("Frequency")
-        # fix for readability:
-        plt.xticks(
-            rotation=45, ha="right"
-        )  # Rotate x-axis labels for better readability
-        plt.tight_layout()
-        plt.subplots_adjust(bottom=0.3)  # Increase space below bars
-        # Save the plot to disk
-        plt.savefig(name)
-        # plt.show()
-
-    def generate_document_term_matix(self):
-        print("creating doucment-term matrix of suitable sentences")
-        # We are going to create a document-term matrix using CountVectorizer, and exclude common English stop words
-        from sklearn.feature_extraction.text import CountVectorizer
-        from stop_words import get_stop_words
-
-        # print(stop_words)
-
-        stop_words = get_stop_words("sv")
-        stop_words.extend(self.additional_stop_words)
-        # Filter the DataFrame to get sentences where 'suitable' is True
-        suitable_sentences = self.df[self.df["suitable"]]["sentence"]
-
-        # Apply a first round of text cleaning techniques
-        def clean_text_round1(text):
-            """Make text lowercase, remove text in square brackets, remove punctuation and remove words containing numbers."""
-            text = text.lower()
-            text = re.sub("\[.*?\]", "", text)
-            text = re.sub("[%s]" % re.escape(string.punctuation), "", text)
-            text = re.sub("\w*\d\w*", "", text)
-            return text
-
-        round1 = lambda x: clean_text_round1(x)
-
-        # Let's take a look at the updated text
-        data_clean = pd.DataFrame(suitable_sentences.apply(round1))
-        print(data_clean)
-
-        # Create a trigram vectorizer
-        print("calculating trigrams")
-        trigram_vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words=stop_words)
-        data_cv_trigram = trigram_vectorizer.fit_transform(data_clean.sentence)
-        data_dtm_trigram = pd.DataFrame(
-            data_cv_trigram.toarray(),
-            columns=trigram_vectorizer.get_feature_names_out(),
-        )
-        # data_dtm_trigram.to_csv("trigram_document-term_matrix.csv")
-
-        # Create a bigram vectorizer
-        print("calculating bigrams")
-        bigram_vectorizer = CountVectorizer(ngram_range=(2, 2), stop_words=stop_words)
-        data_cv_bigram = bigram_vectorizer.fit_transform(data_clean.sentence)
-        data_dtm_bigram = pd.DataFrame(
-            data_cv_bigram.toarray(), columns=bigram_vectorizer.get_feature_names_out()
-        )
-        # data_dtm_bigram.to_csv("bigram_document-term_matrix.csv")
-
-        # monogram vectorizer
-        print("calculating monograms")
-        cv = CountVectorizer(stop_words=stop_words)
-        data_cv = cv.fit_transform(data_clean.sentence)
-        data_dtm = pd.DataFrame(data_cv.toarray(), columns=cv.get_feature_names_out())
-        print(data_dtm)
-        # data_dtm.to_csv("monogram_document-term_matrix.csv")
-
-        # def create_plots(self):
-        print("creating plots of most frequent words")
-
-        self.create_plot(name="top_10_monogram.png", df=data_dtm)
-        self.create_plot(name="top_10_bigram.png", df=data_dtm_bigram)
-        self.create_plot(name="top_10_trigram.png", df=data_dtm_trigram)
-
-        print("creating wordcloud")
-        from wordcloud import WordCloud
-
-        # Join the cleaned sentences into a single string
-        text = " ".join(data_clean.sentence)
-        text_without_stopwords = " ".join(
-            [word for word in text.split() if word.lower() not in stop_words]
-        )
-
-        # Generate a word cloud
-        wordcloud = WordCloud(width=800, height=400, background_color="white").generate(
-            text_without_stopwords
-        )
-
-        # Display the word cloud using matplotlib
-        plt.figure(figsize=(10, 6))
-        plt.imshow(wordcloud, interpolation="bilinear")
-        plt.axis("off")  # Turn off axis numbers
-        plt.title("Word Cloud of Most Frequent Words")
-        plt.savefig("wordcloud.png")
+            self.df.at[idx, "lang"] = language_detection_result["lang"]
+            self.df.at[idx, "score"] = language_detection_result["score"]
 
     @staticmethod
     def suitable_sentence(sentence):
@@ -329,7 +173,7 @@ class RiksdagenAnalyzer(BaseModel):
     def save(self):
         # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
         # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
-        self.append_to_jsonl()
+        self.append_suitable_sentences_to_jsonl()
 
         # Save a version with only rows where 'suitable' is True
         # suitable_rows = self.df[self.df["suitable"]]
@@ -341,12 +185,16 @@ class RiksdagenAnalyzer(BaseModel):
         # TODO go through the jsonl line by line and save all lines with suitable=True to a new file
         pass
 
-    def append_to_jsonl(self):
+    def append_suitable_sentences_to_jsonl(self):
         # Assuming your DataFrame is named df
         # Replace 'your_data.jsonl' with the desired filename
 
+        # Filter the DataFrame where 'suitable' column is True
+        filtered_df = self.df[self.df['suitable']]
+        df_without_suitable = filtered_df.drop('suitable', axis=1)
+
         # Convert DataFrame to list of dictionaries
-        data = self.df.to_dict(orient="records")
+        data = df_without_suitable.to_dict(orient="records")
 
         # if suitable:
         #     filename = f"{self.filename}_suitable.jsonl"
@@ -456,8 +304,8 @@ class RiksdagenAnalyzer(BaseModel):
                                 self.generate_id_and_hash()
                                 self.strip_newlines()
                                 self.determine_suitability()
-                                self.determine_language()
-                                self.append_to_jsonl()
+                                self.detect_language_for_all_sentences()
+                                self.append_suitable_sentences_to_jsonl()
                             else:
                                 logger.warning(
                                     f"Document with id {document.id} with path "

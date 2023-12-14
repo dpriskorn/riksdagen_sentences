@@ -1,4 +1,5 @@
 import logging
+import re
 from typing import List
 
 import spacy
@@ -58,6 +59,7 @@ class RiksdagenDocument(BaseModel):
         if not self.text:
             # We assume html is present
             self.convert_html_to_text()
+
         # Load the Swedish language model
         nlp = spacy.load("sv_core_news_sm")
 
@@ -76,13 +78,35 @@ class RiksdagenDocument(BaseModel):
             logger.info(f"loading chunk {count}/{self.number_of_chunks}")
             doc = nlp(chunk)
 
-            # Filter out sentences consisting only of newline characters
-            filtered_sentences = [
-                Sentence(text=sent.text, token_count=len(sent.text.split()))
-                for sent in doc.sents
-                if sent.text.strip()
-            ]
-            self.sentences.extend(filtered_sentences)
+            # Debugging sent.text.split()
+            for sent in doc.sents:
+                # Remove newlines, digits and a selection of characters
+                cleaned_sentence = re.sub(
+                    r"\d+",
+                    "",
+                    sent.text.replace("\n", "")
+                    .replace("\r", "")
+                    .replace(":", "")
+                    .replace(",", "")
+                    .replace(".", "")
+                    .replace("(", "")
+                    .replace(")", "")
+                    .replace("-", "")
+                    .replace("–", "")
+                    .replace("/", "")
+                    .strip(),
+                )
+                token_count = len(cleaned_sentence.split())
+
+                logger.debug(
+                    "Sentence text: %s, Split: %s", cleaned_sentence, token_count
+                )
+                filtered_sentences = [
+                    Sentence(text=sent.text, token_count=token_count)
+                    for sent in doc.sents
+                    if sent.text.strip()
+                ]
+                self.sentences.extend(filtered_sentences)
             count += 1
 
         logger.info(f"Extracted {len(self.sentences)} sentences")
