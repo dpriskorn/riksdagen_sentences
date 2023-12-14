@@ -54,10 +54,8 @@ class RiksdagenAnalyzer(BaseModel):
 
     def start_analyzing(self):
         self.read_json_from_disk_and_extract()
-        # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
         self.print_number_of_tokens()
-        # self.generate_document_term_matix()
 
     def handle_arguments(self):
         self.setup_argparse()
@@ -175,20 +173,7 @@ class RiksdagenAnalyzer(BaseModel):
         # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
         self.append_suitable_sentences_to_jsonl()
 
-        # Save a version with only rows where 'suitable' is True
-        # suitable_rows = self.df[self.df["suitable"]]
-        # suitable_rows.to_pickle(f"{self.filename}_suitable.pickle.xz", compression="xz")
-        # suitable_rows.to_csv(f"{self.filename}_suitable.csv.xz", compression="xz")
-        # self.save_as_jsonl(suitable_rows, suitable=True)
-
-    def create_suitable_jsonl(self):
-        # TODO go through the jsonl line by line and save all lines with suitable=True to a new file
-        pass
-
     def append_suitable_sentences_to_jsonl(self):
-        # Assuming your DataFrame is named df
-        # Replace 'your_data.jsonl' with the desired filename
-
         # Filter the DataFrame where 'suitable' column is True
         filtered_df = self.df[self.df['suitable']]
         df_without_suitable = filtered_df.drop('suitable', axis=1)
@@ -196,9 +181,6 @@ class RiksdagenAnalyzer(BaseModel):
         # Convert DataFrame to list of dictionaries
         data = df_without_suitable.to_dict(orient="records")
 
-        # if suitable:
-        #     filename = f"{self.filename}_suitable.jsonl"
-        # else:
         filename = f"{self.filename}.jsonl"
 
         # Write data to a JSONL file
@@ -227,18 +209,6 @@ class RiksdagenAnalyzer(BaseModel):
 
         self.df["md5_hash"] = self.df["sentence"].apply(self.generate_md5_hash)
 
-    # def extract_sentences_from_all_documents(self):
-    #     total_documents = min(len(self.documents), self.max_documents_to_extract)
-    #     with tqdm(
-    #         total=total_documents, desc="Extracting sentences from all documents", unit="doc"
-    #     ) as pbar_docs:
-    #         for index, doc in enumerate(self.documents, 1):
-    #             if index > self.max_documents_to_extract:
-    #                 print("max reached, stopping extraction")
-    #                 break
-    #             pbar_docs.update(1)
-    #             doc.extract_sentences()
-
     def create_dataframe_with_all_sentences(self):
         print("creating dataframe")
         # Creating DataFrame
@@ -247,8 +217,9 @@ class RiksdagenAnalyzer(BaseModel):
         for doc in self.documents:
             for sentence in doc.sentences:
                 data["id"].append(doc.id)
-                data["sentence"].append(sentence.text)
-                data["tokens"] = sentence.token_count
+                data["sent"].append(sentence.text)
+                data["tok"] = sentence.token_count
+                data["ent"] = sentence.entities
 
         self.df = pd.DataFrame(data)
 

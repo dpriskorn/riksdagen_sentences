@@ -1970,6 +1970,21 @@ th = ["pythainlp (>=2.0)"]
 transformers = ["spacy-transformers (>=1.1.2,<1.4.0)"]
 
 [[package]]
+name = "spacy-entity-linker"
+version = "1.0.3"
+description = "Linked Entity Pipeline for spaCy"
+optional = false
+python-versions = "*"
+files = [
+    {file = "spacy-entity-linker-1.0.3.tar.gz", hash = "sha256:a27d181367d40c5e142cdeac23ed3ae6023f6a61d5c5f511f3024836c9ac8ba1"},
+]
+
+[package.dependencies]
+numpy = ">=1.0.0"
+spacy = ">=3.0.0"
+tqdm = "*"
+
+[[package]]
 name = "spacy-legacy"
 version = "3.0.12"
 description = "Legacy registered functions for spaCy backwards compatibility"
@@ -2371,4 +2386,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "e38fc40b67606bd51033ad1eaa707961217776404799b4bb4fd54b230b5e2092"
+content-hash = "9f6912b4aae108b37a06c48a866b1cb983e15dc8732365a096020b4358d339c0"

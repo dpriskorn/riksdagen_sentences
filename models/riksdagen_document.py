@@ -56,12 +56,15 @@ class RiksdagenDocument(BaseModel):
         self.text = soup.get_text(separator=" ", strip=False)
 
     def extract_sentences(self):
+        """Extract sentences and do the entity linking"""
         if not self.text:
             # We assume html is present
             self.convert_html_to_text()
 
         # Load the Swedish language model
-        nlp = spacy.load("sv_core_news_lg")
+        nlp = spacy.load("sv_core_news_sm")
+        # add pipeline (declared through entry_points in setup.py)
+        nlp.add_pipe("entityLinker", last=True)
 
         # Displaying the word count
         logger.info(f"Number of words before tokenization: {self.count_words}")
@@ -97,12 +100,15 @@ class RiksdagenDocument(BaseModel):
                     .strip(),
                 )
                 token_count = len(cleaned_sentence.split())
-
-                logger.debug(
-                    "Sentence text: %s, Split: %s", cleaned_sentence, token_count
-                )
+                print(sent._.linkedEntities.pretty_print())
+                entities_objects = sent._.linkedEntities
+                entities = set([f"Q{entity.get_id()}" for entity in entities_objects])
+                entities = self.fix_obvious_wrong_entities(entities)
+                logger.info(f"Sentence text: {cleaned_sentence}, entities: {entities}, tokens: {token_count}")
+                # if cleaned_sentence and entities:
+                #     exit()
                 filtered_sentences = [
-                    Sentence(text=sent.text, token_count=token_count)
+                    Sentence(text=sent.text, token_count=token_count,entities=entities)
                     for sent in doc.sents
                     if sent.text.strip()
                 ]
@@ -110,3 +116,17 @@ class RiksdagenDocument(BaseModel):
             count += 1
 
         logger.info(f"Extracted {len(self.sentences)} sentences")
+
+    def fix_obvious_wrong_entities(self, entities: set):
+        for wrong_entity, correct_entity in self.custom_substitutions.items():
+            entities = list(map(lambda s: s.replace(wrong_entity, correct_entity), entities))
+        return entities
+
+    @property
+    def custom_substitutions(self):
+        return {
+            'Q19896337': 'Q34',
+            'Q3143': 'Q46', #moon ->europa
+            # Add more substitutions as needed
+            # 'Q_ENTITY_X': 'Q_ENTITY_Y'
+        }
