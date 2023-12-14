@@ -104,11 +104,13 @@ class RiksdagenDocument(BaseModel):
                 entities_objects = sent._.linkedEntities
                 entities = set([f"Q{entity.get_id()}" for entity in entities_objects])
                 entities = self.fix_obvious_wrong_entities(entities)
-                logger.info(f"Sentence text: {cleaned_sentence}, entities: {entities}, tokens: {token_count}")
+                logger.info(
+                    f"Sentence text: {cleaned_sentence}, entities: {entities}, tokens: {token_count}"
+                )
                 # if cleaned_sentence and entities:
                 #     exit()
                 filtered_sentences = [
-                    Sentence(text=sent.text, token_count=token_count,entities=entities)
+                    Sentence(text=sent.text, token_count=token_count, entities=entities)
                     for sent in doc.sents
                     if sent.text.strip()
                 ]
@@ -119,14 +121,16 @@ class RiksdagenDocument(BaseModel):
 
     def fix_obvious_wrong_entities(self, entities: set):
         for wrong_entity, correct_entity in self.custom_substitutions.items():
-            entities = list(map(lambda s: s.replace(wrong_entity, correct_entity), entities))
+            entities = list(
+                map(lambda s: s.replace(wrong_entity, correct_entity), entities)
+            )
         return entities
 
     @property
     def custom_substitutions(self):
         return {
-            'Q19896337': 'Q34',
-            'Q3143': 'Q46', #moon ->europa
+            "Q19896337": "Q34",
+            "Q3143": "Q46",  # moon ->europa
             # Add more substitutions as needed
             # 'Q_ENTITY_X': 'Q_ENTITY_Y'
         }

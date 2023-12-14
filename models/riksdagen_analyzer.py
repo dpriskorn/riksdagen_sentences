@@ -175,8 +175,8 @@ class RiksdagenAnalyzer(BaseModel):
 
     def append_suitable_sentences_to_jsonl(self):
         # Filter the DataFrame where 'suitable' column is True
-        filtered_df = self.df[self.df['suitable']]
-        df_without_suitable = filtered_df.drop('suitable', axis=1)
+        filtered_df = self.df[self.df["suitable"]]
+        df_without_suitable = filtered_df.drop("suitable", axis=1)
 
         # Convert DataFrame to list of dictionaries
         data = df_without_suitable.to_dict(orient="records")
