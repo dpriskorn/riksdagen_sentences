@@ -3,7 +3,8 @@
 
 '' This is needed to distinguish forms
 entity lexical_category {
-    + qid INT PRIMARY UNIQUE
+    + id INT PRIMARY UNIQUE
+    + qid INT UNIQUE
     + name_en TEXT
 }
 
@@ -12,19 +13,20 @@ class language {
     + id INT PRIMARY AUTOINCREMENT
     + name_en TEXT NOT NULL UNIQUE
     + iso_code TEXT NOT NULL UNIQUE
-    + qid TEXT NOT NULL UNIQUE
+    + qid INT NOT NULL UNIQUE
 }
 '' e.g. Riksdagenförvaltningen Q10655176)
 entity provider {
     + id INT PRIMARY AUTOINCREMENT
     + title TEXT NOT NULL
-    + qid TEXT NOT NULL
+    + qid INT NOT NULL
 }
 '' e.g. Riksdagens öppna data Q108560253
+'' QID for this term: Q59294700
 entity collection {
     + id INT PRIMARY AUTOINCREMENT
     + title TEXT NOT NULL
-    + qid TEXT NOT NULL
+    + qid INT NOT NULL
     + provider INT NOT NULL
 }
 
@@ -32,7 +34,7 @@ entity collection {
 entity dataset {
     + id INT PRIMARY AUTOINCREMENT
     + title TEXT NOT NULL
-    + qid TEXT NOT NULL
+    + qid INT NOT NULL
     + collection INT NOT NULL
 }
 
@@ -108,10 +110,12 @@ dataset }-- provider
 ' one to one
 sentence -- language
 rawtoken -- lexical_category
-rawtoken -- raw_norm_linking
-normtoken -- raw_norm_linking
-rawtoken -- rawtoken_sentence_linking
-sentence -- rawtoken_sentence_linking
-rawtoken -- rawtoken_lexeme_form_id_linking
-lexeme_form_id -- rawtoken_lexeme_form_id_linking
+
+' many to many
+rawtoken }--{ raw_norm_linking
+normtoken }--{ raw_norm_linking
+rawtoken }--{ rawtoken_sentence_linking
+sentence }--{ rawtoken_sentence_linking
+rawtoken }--{ rawtoken_lexeme_form_id_linking
+lexeme_form_id }--{ rawtoken_lexeme_form_id_linking
 @enduml
