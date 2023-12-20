@@ -1,6 +1,8 @@
 import logging
 import re
-from typing import List
+import sqlite3
+from sqlite3 import Cursor
+from typing import List, Any
 
 import spacy
 from bs4 import BeautifulSoup
@@ -21,6 +23,12 @@ class RiksdagenDocument(BaseModel):
     chunk_size: int = 100000
     chunks: List[str] = list()
     sentences: List[Sentence] = list()
+    connection: Any = None
+    tuple_cursor: Cursor = None
+    row_cursor: Cursor = None
+
+    class Config:
+        arbitrary_types_allowed = True
 
     @property
     def token_count(self) -> int:
@@ -40,6 +48,39 @@ class RiksdagenDocument(BaseModel):
     def number_of_sentences(self) -> int:
         # Count the number of chunks
         return len(self.sentences)
+
+    def connect_to_db(self) -> None:
+        db_file = "database.db"
+        # Connect to the database
+        self.connection = sqlite3.connect(db_file)
+
+    def initialize_cursors(self) -> None:
+        # Create cursors to interact with the database
+        self.row_cursor = self.connection.cursor()
+        self.row_cursor.row_factory = sqlite3.Row
+        self.tuple_cursor = self.connection.cursor()
+        self.tuple_cursor.row_factory = None
+
+    def commit_and_close_db(self) -> None:
+        # Don't forget to close the connection when done
+        # self.conn.commit()
+        self.connection.close()
+
+    def add_document_to_database(self):
+        self.connect_to_db()
+        self.initialize_cursors()
+        # Assuming 'documents' is the name of the table where documents are stored
+        query = "INSERT INTO document (external_id, dataset) VALUES (?, ?, ?)"
+        values = (self.id, self.text, self.html)
+
+        try:
+            self.row_cursor.execute(query, values)
+            self.connection.commit()
+            print("Document added to the database.")
+        except sqlite3.Error as e:
+            print(f"Error adding document to the database: {e}")
+        finally:
+            self.commit_and_close_db()
 
     def chunk_text(self):
         # Function to chunk the text

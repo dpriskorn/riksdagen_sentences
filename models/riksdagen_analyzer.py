@@ -1,23 +1,21 @@
 import argparse
-import hashlib
 import json
 import logging
-import lzma
 import os
 import sqlite3
 import string
 import uuid
-from typing import List, Dict
+from sqlite3 import Cursor
+from typing import List, Dict, Any
 
-import jsonlines
+import pandas as pd
+import yaml
 from ftlangdetect import detect
 from pandas import DataFrame
 from pydantic import BaseModel
-import pandas as pd
 from tqdm import tqdm
 
 import config
-from models.RiksdagenJsonl import RiksdagenJsonFileProcessor
 from models.riksdagen_document import RiksdagenDocument
 
 logger = logging.getLogger(__name__)
@@ -37,6 +35,11 @@ class RiksdagenAnalyzer(BaseModel):
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     jsonl_path_to_load: str = ""
     arguments: argparse.Namespace = argparse.Namespace()
+    languages: Dict[Any, Any] = dict()
+    language_config_path: str = "config/languages.yml"
+    connection: Any = None
+    tuple_cursor: Cursor = None
+    row_cursor: Cursor = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -53,28 +56,53 @@ class RiksdagenAnalyzer(BaseModel):
             "filename"
         ]
 
-    def start_analyzing(self):
+    def start(self):
+        self.load_languages_from_yaml()
+        self.connect_to_db()
+        self.initialize_cursors()
+        self.create_tables()
+        self.create_indexes()
+        self.insert_langauges_from_yaml()
+        self.commit_and_close_db()
+        exit()
         self.read_json_from_disk_and_extract()
-        # self.print_number_of_documents()
         self.print_number_of_skipped_documents()
         self.print_number_of_tokens()
         # self.generate_document_term_matix()
 
+    def load_languages_from_yaml(self):
+        # Load YAML into a dictionary
+        with open(self.language_config_path, 'r') as file:
+            # Read YAML content from the file
+            self.languages = yaml.safe_load(file)
+
+    def insert_langauges_from_yaml(self):
+        print("Inserting languages from YAML")
+        # Construct the SQL INSERT query
+        query = '''
+                INSERT OR IGNORE INTO language (name_en, iso_code, qid)
+                VALUES (?, ?, ?)
+                '''
+
+        # Iterate through each language and insert its data
+        for lang_code, lang_data in self.languages['development'].items():
+            language_name_en = lang_data['language_name_en']
+            iso_code = lang_code
+            qid = lang_data['language_qid']
+
+            # Execute the query with the extracted values for each language
+            self.tuple_cursor.execute(query, (language_name_en, iso_code, qid))
+
     def handle_arguments(self):
         self.setup_argparse()
         self.arguments = self.parser.parse_args()
-        if self.arguments.load_jsonl:
-            json_processor = RiksdagenJsonFileProcessor(
-                file_path=self.arguments.load_jsonl
-            )
-            json_processor.process_json()
         if self.arguments.max:
             self.max_documents_to_extract = self.arguments.max
         if self.arguments.offset:
             self.document_offset = self.arguments.offset
         if self.arguments.analyze:
             self.riksdagen_document_type = self.arguments.analyze
-            self.start_analyzing()
+            self.start()
 
     def print_number_of_skipped_documents(self):
         print(
@@ -132,113 +160,14 @@ class RiksdagenAnalyzer(BaseModel):
         # Remove newlines from the end of sentences in the 'sentences' column
         self.df["sentence"] = self.df["sentence"].astype(str).str.rstrip("\n")
 
-    def print_statistics(self):
-        print("Statistics:")
-        # Counting total number of rows
-        total_sentences = self.df.shape[0]
-        print("Total number of sentences:", total_sentences)
-
-        # Count the number of empty sentences
-        empty_sentences_count = (self.df["sentence"].str.strip() == "").sum()
-        print(f"Number of empty sentences: {empty_sentences_count}")
-
-        # Counting rows where 'suitable' column is True
-        suitable_count = self.df[self.df["suitable"] == True].shape[0]
-        print("Number of suitable sentences:", suitable_count)
-        suitable_percentage = (suitable_count / total_sentences) * 100
-        print("Percentage suitable sentences:", round(suitable_percentage))
-
-        # Tokens
-        try:
-            total_tokens = self.df["tokens"].sum()
-            print("Total sum of 'tokens' column:", total_tokens)
-            # Calculate the mean number of tokens per sentence
-            mean_tokens_per_sentence = total_tokens / total_sentences
-            print("Mean number of tokens per sentence:", mean_tokens_per_sentence)
-        except KeyError:
-            pass
-
-        # Counting and displaying the distribution of language codes
-        language_distribution = self.df["langdetect"].value_counts()
-        # Calculating percentages
-        try:
-            en_percentage = (language_distribution["en"] / total_sentences) * 100
-            sv_percentage = (language_distribution["sv"] / total_sentences) * 100
-            print("Percentage of 'en' (English) sentences:", round(en_percentage))
-            print("Percentage of 'sv' (Swedish) sentences:", round(sv_percentage))
-            print("Language code distribution:")
-            print(language_distribution)
-        except KeyError:
-            pass
-
     def save(self):
         # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
         # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
         self.append_suitable_sentences_to_jsonl()
 
-        # Save a version with only rows where 'suitable' is True
-        # suitable_rows = self.df[self.df["suitable"]]
-        # suitable_rows.to_pickle(f"{self.filename}_suitable.pickle.xz", compression="xz")
-        # suitable_rows.to_csv(f"{self.filename}_suitable.csv.xz", compression="xz")
-        # self.save_as_jsonl(suitable_rows, suitable=True)
-
-    def create_suitable_jsonl(self):
-        # TODO go through the jsonl line by line and save all lines with suitable=True to a new file
-        pass
-
-    def append_suitable_sentences_to_jsonl(self):
-        # Assuming your DataFrame is named df
-        # Replace 'your_data.jsonl' with the desired filename
-
-        # Filter the DataFrame where 'suitable' column is True
-        filtered_df = self.df[self.df['suitable']]
-        df_without_suitable = filtered_df.drop('suitable', axis=1)
-
-        # Convert DataFrame to list of dictionaries
-        data = df_without_suitable.to_dict(orient="records")
-
-        # if suitable:
-        #     filename = f"{self.filename}_suitable.jsonl"
-        # else:
-        filename = f"{self.filename}.jsonl"
-
-        # Write data to a JSONL file
-        with jsonlines.open(filename, mode="a") as writer:
-            writer.write_all(data)
-
-    def compress_jsonl(self):
-        # Compress the JSONL file with xz
-        with open(f"{self.filename}.jsonl", "rb") as jsonl_file:
-            with lzma.open(f"{self.filename}.jsonl.xz", "wb") as xz_file:
-                for line in jsonl_file:
-                    xz_file.write(line)
-
-    # def remove_uncompressed_jsonl(self):
-    #     os.remove(self.filename)
-
-    @staticmethod
-    def generate_md5_hash(sentence):
-        return hashlib.md5(sentence.encode()).hexdigest()
-
-    def generate_id_and_hash(self):
+    def generate_uuid(self):
         # Generate UUIDs for each sentence and add them to a new 'uuid' column
         self.df["uuid"] = [str(uuid.uuid4()) for _ in range(len(self.df))]
-
-        # Generate MD5 hash for each sentence and add them to a new 'md5_hash' column
-
-        self.df["md5_hash"] = self.df["sentence"].apply(self.generate_md5_hash)
-
-    # def extract_sentences_from_all_documents(self):
-    #     total_documents = min(len(self.documents), self.max_documents_to_extract)
-    #     with tqdm(
-    #         total=total_documents, desc="Extracting sentences from all documents", unit="doc"
-    #     ) as pbar_docs:
-    #         for index, doc in enumerate(self.documents, 1):
-    #             if index > self.max_documents_to_extract:
-    #                 print("max reached, stopping extraction")
-    #                 break
-    #             pbar_docs.update(1)
-    #             doc.extract_sentences()
 
     def create_dataframe_with_all_sentences(self):
         print("creating dataframe")
@@ -302,7 +231,7 @@ class RiksdagenAnalyzer(BaseModel):
                             self.documents.append(document)
                             self.create_dataframe_with_all_sentences()
                             if not self.dataframe_is_empty():
-                                self.generate_id_and_hash()
+                                self.generate_uuid()
                                 self.strip_newlines()
                                 self.determine_suitability()
                                 self.detect_language_for_all_sentences()
@@ -338,10 +267,10 @@ class RiksdagenAnalyzer(BaseModel):
         print(f"Total number of tokens: {self.token_count}")
 
     def setup_argparse(self):
-        self.parser = argparse.ArgumentParser(description="Parse JSONL file")
-        self.parser.add_argument(
-            "-l", "--load-jsonl", type=str, help="Load JSONL file", required=False
-        )
+        self.parser = argparse.ArgumentParser(description="Parse open data from Riksdagen")
+        # self.parser.add_argument(
+        #     "-l", "--load-jsonl", type=str, help="Load JSONL file", required=False
+        # )
         self.parser.add_argument(
             "--offset", type=int, help="Document offset", required=False
         )
@@ -352,21 +281,15 @@ class RiksdagenAnalyzer(BaseModel):
             "--analyze",
             type=str,
             help="Analyze a document series. One of ['departementserien', 'proposition']",
-            required=False,
+            required=True,
         )
 
     @staticmethod
-    def item_id(entity) -> int:
-        return int(entity.entity_id[1:])
-
-    def check_table(self) -> None:
-        sql_query = "PRAGMA table_info(joined);"
-        self.tuple_cursor.execute(sql_query)
-        result = self.tuple_cursor.fetchall()
-        print(result)
+    def item_int(qid) -> int:
+        return int(qid[1:])
 
     def connect_to_db(self) -> None:
-        db_file = 'database.db'
+        db_file = "database.db"
         # Connect to the database
         self.connection = sqlite3.connect(db_file)
 
@@ -377,14 +300,79 @@ class RiksdagenAnalyzer(BaseModel):
         self.tuple_cursor = self.connection.cursor()
         self.tuple_cursor.row_factory = None
 
+    def create_tables(self):
+        logger.info("Creating tables")
+        sql_queries = [
+            '''CREATE TABLE IF NOT EXISTS language (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name_en TEXT NOT NULL UNIQUE,
+                iso_code TEXT NOT NULL UNIQUE,
+                qid TEXT NOT NULL UNIQUE
+            );''',
 
+            '''CREATE TABLE IF NOT EXISTS provider (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                qid TEXT NOT NULL
+            );''',
+
+            '''CREATE TABLE IF NOT EXISTS collection (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                qid TEXT NOT NULL,
+                provider INT NOT NULL,
+                FOREIGN KEY (provider) REFERENCES provider(id)
+            );''',
+
+            '''CREATE TABLE IF NOT EXISTS dataset (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                qid TEXT NOT NULL,
+                collection INT NOT NULL,
+                FOREIGN KEY (collection) REFERENCES collection(id)
+            );''',
+
+            '''CREATE TABLE IF NOT EXISTS document (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dataset INT NOT NULL,
+                external_id TEXT NOT NULL,
+                FOREIGN KEY (dataset) REFERENCES dataset(id)
+            );''',
+
+            '''CREATE TABLE IF NOT EXISTS sentence (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                text TEXT NOT NULL,
+                uuid TEXT NOT NULL UNIQUE,
+                document INT NOT NULL,
+                language INT NOT NULL,
+                score FLOAT NOT NULL,
+                token_count INT NOT NULL,
+                FOREIGN KEY (document) REFERENCES document(id),
+                FOREIGN KEY (language) REFERENCES language(id)
+            );'''
+        ]
+        for query in sql_queries:
+            self.tuple_cursor.execute(query)
 
     def create_indexes(self):
+        """These indexes enable us to fast lookup of sentences
+        in a given language, document or with a given UUID"""
         logger.info("Creating indexes")
-        query1 = "CREATE INDEX IF NOT EXISTS idx_processed ON joined (processed);"
-        self.tuple_cursor.execute(query1)
+        sql_index_queries = [
+            "CREATE INDEX IF NOT EXISTS idx_language_id ON language(id);",
+            "CREATE INDEX IF NOT EXISTS idx_provider_id ON provider(id);",
+            "CREATE INDEX IF NOT EXISTS idx_collection_id ON collection(id);",
+            "CREATE INDEX IF NOT EXISTS idx_dataset_id ON dataset(id);",
+            "CREATE INDEX IF NOT EXISTS idx_document_id ON document(id);",
+            "CREATE INDEX IF NOT EXISTS idx_sentence_id ON sentence(id);",
+            "CREATE INDEX IF NOT EXISTS idx_sentence_uuid ON sentence(uuid);",
+            "CREATE INDEX IF NOT EXISTS idx_sentence_document_id ON sentence(document);",
+            "CREATE INDEX IF NOT EXISTS idx_sentence_language ON sentence(language);",
+        ]
+        for query in sql_index_queries:
+            self.tuple_cursor.execute(query)
 
     def commit_and_close_db(self) -> None:
         # Don't forget to close the connection when done
-        # self.conn.commit()
+        self.connection.commit()
         self.connection.close()

@@ -22,6 +22,7 @@ beautifulsoup4 = "^4.12.2"
 lxml = "^4.9.3"
 fasttext-langdetect = { git = "https://github.com/dpriskorn/fasttext-langdetect.git", branch = "main"}
 dask = "^2023.11.0"
+pyyaml = "^6.0.1"
 
 
 [tool.poetry.group.dev.dependencies]

@@ -1,0 +1,222 @@
+# Borrowed from Luthor https://gitlab.wikimedia.org/toolforge-repos/luthor/-/raw/master/config/languages.yml?ref_type=heads
+# List of supported languages with QIDs
+#
+# Notes:
+# 1. to avoid the inconvenience of a long list when most languages don't have 
+#    lexemes or Wikisource texts yet, this list is curated manually, and will be
+#    updated as more languages get documented on Wikisource and in Lexeme)
+# 2. While the QID can be determined programmatically for most languages, there are some
+#    edge cases where there is no agreed-upon ISO 639-1 code for a language, e.g. Punjabi.
+
+development: &default
+  'de':
+    language_qid: 'Q188'
+    language_name_en: 'German'
+    language_autonym: 'Deutsch'
+    sources:
+      wikisource_domain: 'de'
+  'ru':
+    language_qid: 'Q7737' 
+    language_name_en: 'Russian'
+    language_autonym: 'Русский'
+    sources:
+      wikisource_domain: 'ru'
+  'et':
+    language_qid: 'Q9072' 
+    language_name_en: 'Estonian'
+    language_autonym: 'Eesti'
+    sources:
+      wikisource_domain:  'et'
+  'en':
+    language_qid: 'Q1860' 
+    language_name_en: 'English'
+    language_autonym: 'English'
+    sources:
+      wikisource_domain: 'en'
+  'ml':
+    language_qid: 'Q36236' 
+    language_name_en: 'Malayalam'
+    language_autonym: 'മലയാളം'
+    sources:
+      wikisource_domain: 'ml'
+  'la':
+    language_qid: 'Q397' 
+    language_name_en: 'Latin'
+    language_autonym: 'Latina'
+    sources:
+      wikisource_domain: 'la'
+  'es':
+    language_qid: 'Q1321' 
+    language_name_en: 'Spanish'
+    language_autonym: 'Español'
+    sources:
+      wikisource_domain: 'es'
+  'el':
+    language_qid: 'Q36510' 
+    language_name_en: 'Greek'
+    language_autonym: 'Ελληνικά'
+    sources:
+      wikisource_domain: 'el'
+  'sv':
+    language_qid: 'Q9027' 
+    language_name_en: 'Swedish'
+    language_autonym: 'Svenska'
+    sources:
+      wikisource_domain: 'sv'
+  'it':
+    language_qid: 'Q652' 
+    language_name_en: 'Italian'
+    language_autonym: 'Italiano'
+    sources:
+      wikisource_domain: 'it'
+  'no':
+    language_qid: 'Q25167' 
+    language_name_en: 'Norwegian'
+    language_autonym: 'Bokmål'
+    sources:
+      wikisource_domain: 'no'
+  'da':
+    language_qid: 'Q9035' 
+    language_name_en: 'Danish'
+    language_autonym: 'Dansk'
+    sources:
+      wikisource_domain: 'da'
+  'he':
+    language_qid: 'Q9288' 
+    language_name_en: 'Hebrew'
+    language_autonym: 'עברית'
+    sources:
+      wikisource_domain: 'he'
+  'cs':
+    language_qid: 'Q9056' 
+    language_name_en: 'Czech'
+    language_autonym: 'Čeština'
+    sources:
+      wikisource_domain: 'cs'
+  'eu':
+    language_qid: 'Q8752' 
+    language_name_en: 'Basque'
+    language_autonym: 'Euskara'
+    sources:
+      wikisource_domain: 'eu'
+  'id':
+    language_qid: 'Q9240' 
+    language_name_en: 'Indonesian'
+    language_autonym: 'Bahasa Indonesia'
+    sources:
+      wikisource_domain: 'id'
+  'fr':
+    language_qid: 'Q150' 
+    language_name_en: 'French'
+    language_autonym: 'Français'
+    sources:
+      wikisource_domain: 'fr'
+  'uk':
+    language_qid: 'Q8798' 
+    language_name_en: 'Ukrainian'
+    language_autonym: 'Українська'
+    sources:
+      wikisource_domain: 'uk'
+  'fa':
+    language_qid: 'Q9168' 
+    language_name_en: 'Persian'
+    language_autonym: 'فارسی'
+    sources:
+      wikisource_domain: 'fa'
+  'bn':
+    language_qid: 'Q9610' 
+    language_name_en: 'Bangla'
+    language_autonym: 'বাংলা'
+    sources:
+      wikisource_domain: 'bn'
+  'ja':
+    language_qid: 'Q5287' 
+    language_name_en: 'Japanese'
+    language_autonym: '日本語'
+    sources:
+      wikisource_domain: 'ja'
+  'pt':
+    language_qid: 'Q5146' 
+    language_name_en: 'Portuguese'
+    language_autonym: 'Português'
+    sources:
+      wikisource_domain: 'pt'
+  'br':
+    language_qid: 'Q12107' 
+    language_name_en: 'Breton'
+    language_autonym: 'Brezhoneg'
+    sources:
+      wikisource_domain: 'br'
+  'zh':
+    language_qid: 'Q727694' 
+    language_name_en: 'Mandarin Chinese'
+    language_autonym: '中文'
+    sources:
+      wikisource_domain: 'zh'
+  'pl':
+    language_qid: 'Q809' 
+    language_name_en: 'Polish'
+    language_autonym: 'Polski'
+    sources:
+      wikisource_domain: 'pl'
+  'pa':
+    language_qid: 'Q58635' 
+    language_name_en: 'Punjabi'
+    language_autonym: 'ਪੰਜਾਬੀ / پنجابی'
+    sources:
+      wikisource_domain: 'pa'
+  'eo':
+    language_qid: 'Q143' 
+    language_name_en: 'Esperanto'
+    language_autonym: 'Esperanto'
+    sources:
+      wikisource_domain: 'eo'
+  'ar':
+    language_qid: 'Q13955' 
+    language_name_en: 'Arabic'
+    language_autonym: 'العربية'
+    sources:
+      wikisource_domain: 'ar'
+  'sa':
+    language_qid: 'Q11059' 
+    language_name_en: 'Sanskrit'
+    language_autonym: 'संस्कृतम्'
+    sources:
+      wikisource_domain: 'sa'
+  'fi':
+    language_qid: 'Q1412' 
+    language_name_en: 'Finnish'
+    language_autonym: 'Suomi'
+    sources:
+      wikisource_domain: 'fi'
+  'or':
+    language_qid: 'Q33810'
+    language_name_en: 'Odia'
+    language_autonym: 'ଓଡ଼ିଆ'
+    sources:
+      wikisource_domain: 'or'
+  'ta':
+    language_qid: 'Q5885'
+    language_name_en: 'Tamil'
+    language_autonym: 'தமிழ்'
+    sources:
+      wikisource_domain: 'ta'   
+  'hu':
+    language_qid: 'Q9067'
+    language_name_en: 'Hungarian'
+    language_autonym: 'Magyar'
+    sources:
+      wikisource_domain: 'hu'
+  'tr':
+    language_qid: 'Q256'
+    language_name_en: 'Turkish'
+    language_autonym: 'Türkçe'
+    sources:
+      wikisource_domain: 'tr'
+
+## DON'T EDIT BELOW THIS LINE
+production: 
+  <<: *default
+
+test:
+  <<: *default

@@ -1,41 +1,52 @@
 @startuml
+'' The ISO 639-1 code is stored like in the yml like so: 'en'
+class language {
+    + id INT PRIMARY AUTOINCREMENT
+    + name_en TEXT NOT NULL UNIQUE
+    + iso_code TEXT NOT NULL UNIQUE
+    + qid TEXT NOT NULL UNIQUE
+}
 '' e.g. Riksdagenförvaltningen Q10655176)
 entity provider {
-    + id INT PRIMARY
-    + title TEXT
-    + qid TEXT
+    + id INT PRIMARY AUTOINCREMENT
+    + title TEXT NOT NULL
+    + qid TEXT NOT NULL
 }
 '' e.g. Riksdagens öppna data Q108560253
 entity collection {
-    + id INT PRIMARY
-    + title TEXT
-    + qid TEXT
-    + provider INT
+    + id INT PRIMARY AUTOINCREMENT
+    + title TEXT NOT NULL
+    + qid TEXT NOT NULL
+    + provider INT NOT NULL
 }
 '' dataset is e.g. departementserien Q123501464
 entity dataset {
-    + id INT PRIMARY
-    + title TEXT
-    + qid TEXT
-    + collection INT
+    + id INT PRIMARY AUTOINCREMENT
+    + title TEXT NOT NULL
+    + qid TEXT NOT NULL
+    + collection INT NOT NULL
 }
 '' e.g. GNB465, see https://www.riksdagen.se/sv/dokument-och-lagar/dokument/departementsserien/ds-1999-65-_gnb465/
 entity document {
-    + id INT PRIMARY
-    + title TEXT
-    + dataset INT
-    + external_id TEXT
+    + id INT PRIMARY AUTOINCREMENT
+    + dataset INT NOT NULL
+    + external_id TEXT NOT NULL
 }
 entity sentence {
-    + id INT PRIMARY
-    + text TEXT
-    + md5 TEXT
-    + uuid TEXT
-    + document INT
+    + id INT PRIMARY AUTOINCREMENT
+    + text TEXT NOT NULL
+    + uuid TEXT NOT NULL UNIQUE
+    + document INT NOT NULL
+    + language INT NOT NULL
+    + score FLOAT NOT NULL
+    + token_count INT NOT NULL
 }
 ' one to many:
 sentence --|{ document
 document --|{ collection
 collection --|{ dataset
 dataset --|{ provider
+
+' one to one
+sentence -- language
 @enduml
