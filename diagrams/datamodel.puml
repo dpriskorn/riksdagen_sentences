@@ -1,4 +1,12 @@
 @startuml
+'' Store information about token, lexical category and
+
+'' This is needed to distinguish forms
+entity lexical_category {
+    + qid INT PRIMARY UNIQUE
+    + name_en TEXT
+}
+
 '' The ISO 639-1 code is stored like in the yml like so: 'en'
 class language {
     + id INT PRIMARY AUTOINCREMENT
@@ -19,6 +27,7 @@ entity collection {
     + qid TEXT NOT NULL
     + provider INT NOT NULL
 }
+
 '' dataset is e.g. departementserien Q123501464
 entity dataset {
     + id INT PRIMARY AUTOINCREMENT
@@ -26,12 +35,15 @@ entity dataset {
     + qid TEXT NOT NULL
     + collection INT NOT NULL
 }
+
 '' e.g. GNB465, see https://www.riksdagen.se/sv/dokument-och-lagar/dokument/departementsserien/ds-1999-65-_gnb465/
 entity document {
     + id INT PRIMARY AUTOINCREMENT
     + dataset INT NOT NULL
     + external_id TEXT NOT NULL
 }
+
+'' sentences is detected by the spaCy NLP
 entity sentence {
     + id INT PRIMARY AUTOINCREMENT
     + text TEXT NOT NULL
@@ -39,14 +51,67 @@ entity sentence {
     + document INT NOT NULL
     + language INT NOT NULL
     + score FLOAT NOT NULL
-    + token_count INT NOT NULL
 }
+
+'' linking table
+entity rawtoken_sentence_linking {
+    + sentence_id INT PRIMARY
+    + rawtoken_id INT PRIMARY
+}
+
+'' lexeme form ids can be matched later on to forms
+entity lexeme_form_id {
+    + lexeme_id INT PRIMARY
+    + form_id INT PRIMARY
+}
+
+'' linking table
+entity rawtoken_lexeme_form_id_linking {
+    + rawtoken INT PRIMARY
+    + lexeme_id INT PRIMARY
+    + form_id INT PRIMARY
+}
+
+'' raw tokens appear in sentences as output form the NLP and have a lexical category
+'' they have a composite primary key hardcoding them to a specific lexical category
+entity rawtoken {
+    + id INT PRIMARY UNIQUE
+    + lexical_category_id INT PRIMARY UNIQUE
+    + text TEXT
+}
+
+'' normalized tokens are derived from raw tokens and have no lexical category
+'' They help users who want to lookup variations of any given token
+'' e.g. the form Hus has the normalized token hus
+'' e.g. the form statsminister has the normalized token statsminister
+entity normtoken {
+    + id INT PRIMARY UNIQUE
+    + text TEXT
+}
+
+'' link table between forms and normalized tokens
+entity raw_norm_linking {
+    + rawtoken_id INT PRIMARY
+    + normtoken_id INT PRIMARY
+}
+
+
 ' one to many:
-sentence --|{ document
-document --|{ collection
-collection --|{ dataset
-dataset --|{ provider
+lexeme_form_id }-- rawtoken
+normtoken }-- rawtoken
+rawtoken }-- sentence
+sentence }-- document
+document }-- collection
+collection }-- dataset
+dataset }-- provider
 
 ' one to one
 sentence -- language
+rawtoken -- lexical_category
+rawtoken -- raw_norm_linking
+normtoken -- raw_norm_linking
+rawtoken -- rawtoken_sentence_linking
+sentence -- rawtoken_sentence_linking
+rawtoken -- rawtoken_lexeme_form_id_linking
+lexeme_form_id -- rawtoken_lexeme_form_id_linking
 @enduml
