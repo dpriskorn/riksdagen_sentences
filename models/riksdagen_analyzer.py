@@ -4,6 +4,7 @@ import json
 import logging
 import lzma
 import os
+import sqlite3
 import string
 import uuid
 from typing import List, Dict
@@ -353,3 +354,37 @@ class RiksdagenAnalyzer(BaseModel):
             help="Analyze a document series. One of ['departementserien', 'proposition']",
             required=False,
         )
+
+    @staticmethod
+    def item_id(entity) -> int:
+        return int(entity.entity_id[1:])
+
+    def check_table(self) -> None:
+        sql_query = "PRAGMA table_info(joined);"
+        self.tuple_cursor.execute(sql_query)
+        result = self.tuple_cursor.fetchall()
+        print(result)
+
+    def connect_to_db(self) -> None:
+        db_file = 'database.db'
+        # Connect to the database
+        self.connection = sqlite3.connect(db_file)
+
+    def initialize_cursors(self) -> None:
+        # Create cursors to interact with the database
+        self.row_cursor = self.connection.cursor()
+        self.row_cursor.row_factory = sqlite3.Row
+        self.tuple_cursor = self.connection.cursor()
+        self.tuple_cursor.row_factory = None
+
+
+
+    def create_indexes(self):
+        logger.info("Creating indexes")
+        query1 = "CREATE INDEX IF NOT EXISTS idx_processed ON joined (processed);"
+        self.tuple_cursor.execute(query1)
+
+    def commit_and_close_db(self) -> None:
+        # Don't forget to close the connection when done
+        # self.conn.commit()
+        self.connection.close()
