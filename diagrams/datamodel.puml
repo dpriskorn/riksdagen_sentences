@@ -1,0 +1,41 @@
+@startuml
+'' e.g. Riksdagenförvaltningen Q10655176)
+entity provider {
+    + id INT PRIMARY
+    + title TEXT
+    + qid TEXT
+}
+'' e.g. Riksdagens öppna data Q108560253
+entity collection {
+    + id INT PRIMARY
+    + title TEXT
+    + qid TEXT
+    + provider INT
+}
+'' dataset is e.g. departementserien Q123501464
+entity dataset {
+    + id INT PRIMARY
+    + title TEXT
+    + qid TEXT
+    + collection INT
+}
+'' e.g. GNB465, see https://www.riksdagen.se/sv/dokument-och-lagar/dokument/departementsserien/ds-1999-65-_gnb465/
+entity document {
+    + id INT PRIMARY
+    + title TEXT
+    + dataset INT
+    + external_id TEXT
+}
+entity sentence {
+    + id INT PRIMARY
+    + text TEXT
+    + md5 TEXT
+    + uuid TEXT
+    + document INT
+}
+' one to many:
+sentence --|{ document
+document --|{ collection
+collection --|{ dataset
+dataset --|{ provider
+@enduml
