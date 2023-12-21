@@ -42,7 +42,6 @@ class RiksdagenAnalyzer(BaseModel):
             self.read_json_from_disk_and_extract()
             self.print_number_of_skipped_documents()
             self.print_number_of_tokens()
-        # self.generate_document_term_matix()
 
     def setup_dataset(self):
         self.dataset_handler.database_handler = self.database_handler
