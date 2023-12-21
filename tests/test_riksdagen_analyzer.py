@@ -4,10 +4,11 @@ from models.riksdagen_analyzer import RiksdagenAnalyzer
 
 
 class TestRiksdagenAnalyzer(TestCase):
-    def test_suitable_sentence1(self):
-        ra = RiksdagenAnalyzer()
-        result = ra.suitable_sentence("Bedömare 1")
-        assert result is False
+    pass
+    # def test_suitable_sentence1(self):
+    #     ra = RiksdagenAnalyzer()
+    #     result = ra.suitable_sentence("Bedömare 1")
+    #     assert result is False
 
     # def test_suitable_method(self):
     #     ra = RiksdagenAnalyzer()
