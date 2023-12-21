@@ -6,7 +6,6 @@ from typing import Dict, Any
 import yaml
 from pydantic import BaseModel
 
-from models.sentence import Sentence
 from models.token import Token
 
 logger = logging.getLogger(__name__)
