@@ -1,0 +1,133 @@
+@startuml
+'' Store information about token, lexical category and
+
+'' This is needed to distinguish forms
+'' VERB and AUX link to the same qid
+entity lexical_category {
+    + id INT PRIMARY UNIQUE
+    + qid INT
+    + postag TEXT
+}
+
+'' The ISO 639-1 code is stored like in the yml like so: 'en'
+class language {
+    + id INT PRIMARY AUTOINCREMENT
+    + name_en TEXT NOT NULL UNIQUE
+    + iso_code TEXT NOT NULL UNIQUE
+    + qid INT NOT NULL UNIQUE
+}
+'' e.g. Riksdagenförvaltningen Q10655176)
+entity provider {
+    + id INT PRIMARY AUTOINCREMENT
+    + title TEXT NOT NULL
+    + qid INT NOT NULL
+}
+'' e.g. Riksdagens öppna data Q108560253
+'' QID for this term: Q59294700
+entity collection {
+    + id INT PRIMARY AUTOINCREMENT
+    + title TEXT NOT NULL
+    + qid INT NOT NULL
+    + provider INT NOT NULL
+}
+
+'' dataset is e.g. departementserien Q123501464
+entity dataset {
+    + id INT PRIMARY AUTOINCREMENT
+    + title TEXT NOT NULL
+    + qid INT NOT NULL
+    + collection INT NOT NULL
+}
+
+'' e.g. GNB465, see https://www.riksdagen.se/sv/dokument-och-lagar/dokument/departementsserien/ds-1999-65-_gnb465/
+entity document {
+    + id INT PRIMARY AUTOINCREMENT
+    + dataset INT NOT NULL
+    + external_id TEXT NOT NULL
+}
+
+'' sentences is detected by the spaCy NLP
+entity sentence {
+    + id INT PRIMARY AUTOINCREMENT
+    + text TEXT NOT NULL
+    + uuid TEXT NOT NULL UNIQUE
+    + document INT NOT NULL
+    + score INT NOT NULL
+    + language INT NOT NULL
+}
+
+'' linking table
+entity rawtoken_sentence_linking {
+    + sentence INT PRIMARY
+    + rawtoken INT PRIMARY
+}
+
+'' lexeme form ids can be matched later on to forms
+entity lexeme_form {
+    + lexeme INT PRIMARY
+    + form INT PRIMARY
+}
+
+'' linking table
+entity rawtoken_lexeme_form_linking {
+    + rawtoken INT PRIMARY
+    + lexeme INT PRIMARY
+    + form INT PRIMARY
+}
+
+'' raw tokens appear in sentences as output form the NLP and have a lexical category
+'' they have a composite primary key hardcoding them to a specific lexical category
+'' text + lexical_category_id + language = UNIQUE
+entity rawtoken {
+    + id INT PRIMARY AUTOINCREMENT
+    + lexical_category INT
+    + text TEXT NOT NULL
+    + score INT NOT NULL
+    + language INT NOT NULL
+}
+
+'' This prevents duplication of scores in the database on every token and sentence
+entity score {
+    + id INTEGER PRIMARY AUTOINCREMENT
+    + score FLOAT NOT NULL UNIQUE
+}
+
+'' normalized tokens are derived from raw tokens and have no lexical category
+'' They help users who want to lookup variations of any given token
+'' e.g. the form Hus has the normalized token hus
+'' e.g. the form statsminister has the normalized token statsminister
+entity normtoken {
+    + id INT PRIMARY AUTOINCREMENT
+    + text TEXT
+}
+
+'' link table between forms and normalized tokens
+entity rawtoken_normtoken_linking {
+    + rawtoken INT PRIMARY
+    + normtoken INT PRIMARY
+}
+
+
+' one to many:
+lexeme_form }-- rawtoken
+normtoken }-- rawtoken
+rawtoken }-- sentence
+sentence }-- document
+document }-- collection
+collection }-- dataset
+dataset }-- provider
+
+' one to one
+sentence -- score
+sentence -- language
+rawtoken -- lexical_category
+rawtoken -- language
+
+' many to many
+rawtoken }--{ rawtoken_normtoken_linking
+normtoken }--{ rawtoken_normtoken_linking
+rawtoken }--{ rawtoken_sentence_linking
+sentence }--{ rawtoken_sentence_linking
+rawtoken }--{ rawtoken_lexeme_form_linking
+lexeme_form }--{ rawtoken_lexeme_form_linking
+@enduml

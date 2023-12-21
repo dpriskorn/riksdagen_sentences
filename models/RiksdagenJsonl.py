@@ -16,6 +16,7 @@ from wordcloud import WordCloud
 class RiksdagenJsonFileProcessor(BaseModel):
     """This model analyses and gives an
     overview of the sentences in a given jsonl output file"""
+
     file_path: str
     additional_stop_words: List[str] = [
         "ska",
@@ -145,11 +146,13 @@ class RiksdagenJsonFileProcessor(BaseModel):
         round1 = lambda x: self.clean_text_round1(x)
 
         # Let's take a look at the updated text
-        self.cleaned_sentences_df = pd.DataFrame(suitable_sentences["sentence"].apply(round1))
+        self.cleaned_sentences_df = pd.DataFrame(
+            suitable_sentences["sentence"].apply(round1)
+        )
         print(self.cleaned_sentences_df)
         # self.prepare_stopwords()
         # self.calculate_trigram_dtm()
-        #exit()
+        # exit()
 
     # def calculate_trigram_dtm(self):
     #     """This requires a lot of memory, which I don't have."""
@@ -189,37 +192,37 @@ class RiksdagenJsonFileProcessor(BaseModel):
     #     # Now data_dtm_trigram contains the result of processing the data in smaller batches
     #     print(data_dtm_trigram)
 
-        # trigram_vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words=stop_words)
-        # data_cv_trigram = trigram_vectorizer.fit_transform(data_clean.sentence)
-        # data_dtm_trigram = pd.DataFrame(
-        #     data_cv_trigram.toarray(),
-        #     columns=trigram_vectorizer.get_feature_names_out(),
-        # )
+    # trigram_vectorizer = CountVectorizer(ngram_range=(3, 3), stop_words=stop_words)
+    # data_cv_trigram = trigram_vectorizer.fit_transform(data_clean.sentence)
+    # data_dtm_trigram = pd.DataFrame(
+    #     data_cv_trigram.toarray(),
+    #     columns=trigram_vectorizer.get_feature_names_out(),
+    # )
 
-        # # Create a bigram vectorizer
-        # print("calculating bigrams")
-        # bigram_vectorizer = CountVectorizer(ngram_range=(2, 2), stop_words=stop_words)
-        # data_cv_bigram = bigram_vectorizer.fit_transform(data_clean.sentence)
-        # data_dtm_bigram = pd.DataFrame(
-        #     data_cv_bigram.toarray(), columns=bigram_vectorizer.get_feature_names_out()
-        # )
-        # # data_dtm_bigram.to_csv("bigram_document-term_matrix.csv")
-        #
-        # # monogram vectorizer
-        # print("calculating monograms")
-        # cv = CountVectorizer(stop_words=stop_words)
-        # data_cv = cv.fit_transform(data_clean.sentence)
-        # data_dtm = pd.DataFrame(data_cv.toarray(), columns=cv.get_feature_names_out())
-        # print(data_dtm)
-        # # data_dtm.to_csv("monogram_document-term_matrix.csv")
-        #
-        # # def create_plots(self):
-        # print("creating plots of most frequent words")
-        #
-        # self.create_plot(name="top_10_monogram.png", df=data_dtm)
-        # self.create_plot(name="top_10_bigram.png", df=data_dtm_bigram)
-        # self.create_plot(name="top_10_trigram.png", df=data_dtm_trigram)
-        #
+    # # Create a bigram vectorizer
+    # print("calculating bigrams")
+    # bigram_vectorizer = CountVectorizer(ngram_range=(2, 2), stop_words=stop_words)
+    # data_cv_bigram = bigram_vectorizer.fit_transform(data_clean.sentence)
+    # data_dtm_bigram = pd.DataFrame(
+    #     data_cv_bigram.toarray(), columns=bigram_vectorizer.get_feature_names_out()
+    # )
+    # # data_dtm_bigram.to_csv("bigram_document-term_matrix.csv")
+    #
+    # # monogram vectorizer
+    # print("calculating monograms")
+    # cv = CountVectorizer(stop_words=stop_words)
+    # data_cv = cv.fit_transform(data_clean.sentence)
+    # data_dtm = pd.DataFrame(data_cv.toarray(), columns=cv.get_feature_names_out())
+    # print(data_dtm)
+    # # data_dtm.to_csv("monogram_document-term_matrix.csv")
+    #
+    # # def create_plots(self):
+    # print("creating plots of most frequent words")
+    #
+    # self.create_plot(name="top_10_monogram.png", df=data_dtm)
+    # self.create_plot(name="top_10_bigram.png", df=data_dtm_bigram)
+    # self.create_plot(name="top_10_trigram.png", df=data_dtm_trigram)
+    #
     def generate_wordcloud(self):
         print("creating wordcloud")
         from wordcloud import WordCloud
