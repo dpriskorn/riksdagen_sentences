@@ -59,9 +59,9 @@ class DatabaseHandler(BaseModel):
         logger.info("Creating tables")
         sql_commands = [
             """CREATE TABLE IF NOT EXISTS lexical_category (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    qid INT,
-                    postag TEXT UNIQUE NOT NULL
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                qid INT,
+                postag TEXT UNIQUE NOT NULL
             );""",
             """CREATE TABLE IF NOT EXISTS language (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,11 +100,12 @@ class DatabaseHandler(BaseModel):
                 text TEXT NOT NULL,
                 uuid TEXT NOT NULL UNIQUE,
                 document INT NOT NULL,
+                score INT NOT NULL,
                 language INT NOT NULL,
-                score FLOAT NOT NULL,
                 UNIQUE (text, document),
                 FOREIGN KEY (document) REFERENCES document(id),
-                FOREIGN KEY (language) REFERENCES language(id)
+                FOREIGN KEY(language) REFERENCES language(id),
+                FOREIGN KEY(score) REFERENCES score(id)
             );""",
             """CREATE TABLE IF NOT EXISTS lexeme_form_id (
                 lexeme_id INT NOT NULL,
@@ -113,10 +114,18 @@ class DatabaseHandler(BaseModel):
             );""",
             """CREATE TABLE IF NOT EXISTS rawtoken (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                lexical_category_id INT NOT NULL,
+                lexical_category INTEGER,
                 text TEXT NOT NULL,
-                UNIQUE (text, lexical_category_id),
-                FOREIGN KEY (lexical_category_id) REFERENCES lexical_category(id)
+                score INTEGER NOT NULL,
+                language INT NOT NULL,
+                FOREIGN KEY(lexical_category) REFERENCES lexical_category(id),
+                FOREIGN KEY(language) REFERENCES language(id),
+                FOREIGN KEY(score) REFERENCES score(id)
+                UNIQUE(text, lexical_category, language)
+            );""",
+            """CREATE TABLE IF NOT EXISTS score (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                value FLOAT NOT NULL UNIQUE
             );""",
             """CREATE TABLE IF NOT EXISTS normtoken (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -154,7 +163,10 @@ class DatabaseHandler(BaseModel):
         in a given language, document or with a given UUID"""
         logger.info("Creating indexes")
         sql_index_queries = [
+            "CREATE INDEX IF NOT EXISTS idx_score_id ON score(id);",
+            "CREATE INDEX IF NOT EXISTS idx_score_value ON score(value);",
             "CREATE INDEX IF NOT EXISTS idx_language_id ON language(id);",
+            "CREATE INDEX IF NOT EXISTS idx_language_iso_code ON language(iso_code);",
             "CREATE INDEX IF NOT EXISTS idx_postag ON lexical_category(postag);",
             "CREATE INDEX IF NOT EXISTS idx_provider_id ON provider(id);",
             "CREATE INDEX IF NOT EXISTS idx_collection_id ON collection(id);",
@@ -163,7 +175,6 @@ class DatabaseHandler(BaseModel):
             "CREATE INDEX IF NOT EXISTS idx_sentence_id ON sentence(id);",
             "CREATE INDEX IF NOT EXISTS idx_sentence_uuid ON sentence(uuid);",
             "CREATE INDEX IF NOT EXISTS idx_sentence_document_id ON sentence(document);",
-            "CREATE INDEX IF NOT EXISTS idx_sentence_language ON sentence(language);",
             """CREATE INDEX IF NOT EXISTS idx_rawtoken_text ON rawtoken(text);""",
             """CREATE INDEX IF NOT EXISTS idx_normtoken_text ON normtoken(text);""",
         ]
@@ -296,10 +307,16 @@ class DatabaseHandler(BaseModel):
 
     def insert_rawtoken(self, token: Token):
         query = """
-        INSERT OR IGNORE INTO rawtoken (lexical_category_id, text)
-        VALUES (?, ?);
+        INSERT OR IGNORE INTO rawtoken 
+        (lexical_category, text, language, score)
+        VALUES (?, ?, ?, ?);
         """
-        params = (token.pos_id, token.rawtoken)
+        params = (
+            token.pos_id,
+            token.rawtoken,
+            token.sentence.language_id,
+            token.sentence.score_id,
+        )
         self.tuple_cursor.execute(query, params)
         self.commit_to_database()
         logger.info("rawtoken inserted")
@@ -307,18 +324,65 @@ class DatabaseHandler(BaseModel):
     def get_rawtoken_id(self, token: Token):
         query = """SELECT id
             FROM rawtoken
-            WHERE text = ? and lexical_category_id = ?;
+            WHERE text = ? and lexical_category = ?;
         """
         self.tuple_cursor.execute(query, (token.rawtoken, token.pos_id))
         dataset_id = self.tuple_cursor.fetchone()[0]
-        print(f"Got dataset id: {dataset_id}")
+        logger.info(f"Got dataset id: {dataset_id}")
         return dataset_id
 
     def insert_sentence(self, sentence: Any):
-        raise NotImplementedError()
         query = """
+        INSERT INTO sentence (text, uuid, document, language, score)
+        VALUES (?, ?, ?, ?, ?);
         """
-        params = (token.pos_id, token.rawtoken)
+        params = (
+            sentence.sentence,
+            sentence.uuid,
+            sentence.document.id,
+            sentence.language_id,
+            sentence.score_id
+        )
         self.tuple_cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("rawtoken inserted")
+        logger.info("sentence inserted")
+
+    def insert_score(self, sentence: Any):
+        query = """
+        INSERT OR IGNORE INTO score (value)
+        VALUES (?)
+        """
+        params = (
+            sentence.score,
+        )
+        self.tuple_cursor.execute(query, params)
+        self.commit_to_database()
+        logger.info("score inserted")
+
+    def get_score(self, sentence: Any) -> int:
+        query = """
+            SELECT id
+            FROM score
+            WHERE value = ?
+        """
+        params = (
+            sentence.score,
+        )
+        self.tuple_cursor.execute(query, params)
+        score_id = self.tuple_cursor.fetchone()[0]
+        logger.info(f"Got score id: {score_id}")
+        return score_id
+
+    def get_language(self, sentence: Any) -> int:
+        query = """
+            SELECT id
+            FROM language
+            WHERE iso_code = ?
+        """
+        params = (
+            sentence.detected_language.lower(),
+        )
+        self.tuple_cursor.execute(query, params)
+        rowid = self.tuple_cursor.fetchone()[0]
+        logger.info(f"Got language id: {rowid}")
+        return rowid

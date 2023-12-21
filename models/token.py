@@ -8,15 +8,15 @@ logger = logging.getLogger(__name__)
 
 
 class Token(BaseModel):
-    token: Any
-    database_handler: Any
+    token: Any  # token from spaCy
+    sentence: Any
 
-    def start(self):
+    def analyze_and_insert(self):
         if self.is_accepted_token():
             print(spacy.explain(self.pos))
             print(f"rawtoken: '{self.rawtoken}'")
             print(f"normtoken: '{self.normalized_token()}'")
-            self.database_handler.insert_rawtoken(token=self)
+            self.sentence.database_handler.insert_rawtoken(token=self)
         else:
             print(f"discarded: text: {self.rawtoken}, pos: {self.pos}")
 
@@ -28,7 +28,7 @@ class Token(BaseModel):
     @property
     def pos_id(self) -> int:
         """ID of the postag of this token in the database"""
-        return self.database_handler.get_lexical_category_id(token=self)
+        return self.sentence.database_handler.get_lexical_category_id(token=self)
 
     @property
     def pos(self) -> str:
@@ -48,10 +48,7 @@ class Token(BaseModel):
         unaccepted_postags = ["SPACE", "PUNCT", "SYM", "X"]
         if self.cleaned_token:
             has_numeric = any(char.isnumeric() for char in self.rawtoken)
-            if (
-                self.token.pos_ not in unaccepted_postags
-                and not has_numeric
-            ):
+            if self.token.pos_ not in unaccepted_postags and not has_numeric:
                 return True
         return False
 

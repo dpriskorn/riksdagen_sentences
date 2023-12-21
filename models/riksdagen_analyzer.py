@@ -2,12 +2,8 @@ import argparse
 import json
 import logging
 import os
-import string
-import uuid
-from typing import List, Dict
+from typing import List
 
-import pandas as pd
-from ftlangdetect import detect
 from pandas import DataFrame
 from pydantic import BaseModel
 from tqdm import tqdm
@@ -70,60 +66,51 @@ class RiksdagenAnalyzer(BaseModel):
             f"(because of missing or bad data): {self.skipped_documents_count}"
         )
 
-    @staticmethod
-    def detect_language(text) -> Dict[str, float]:
-        # This returns a dict like so: {'lang': 'tr', 'score': 0.9982126951217651}
-        return detect(text=text.replace("\n", ""), low_memory=False)
+    # def detect_language_for_all_sentences(self):
+    #     print("Determining language for suitable sentences")
+    #     suitable_sentences = self.df[self.df["suitable"]]["sentence"]
+    #
+    #     # Use tqdm to show progress while applying language detection
+    #     for idx in tqdm(
+    #         suitable_sentences.index,
+    #         desc="Detecting language",
+    #         total=len(suitable_sentences),
+    #     ):
+    #         language_detection_result = self.detect_language(
+    #             self.df.at[idx, "sentence"]
+    #         )
+    #         self.df.at[idx, "lang"] = language_detection_result["lang"]
+    #         self.df.at[idx, "score"] = language_detection_result["score"]
 
-    def detect_language_for_all_sentences(self):
-        print("Determining language for suitable sentences")
-        suitable_sentences = self.df[self.df["suitable"]]["sentence"]
+    # def determine_suitability(self):
+    #     print("determining suitability")
+    #     # Apply the suitable_sentence function to the 'sentences' column
+    #     self.df["suitable"] = self.df["sentence"].apply(self.suitable_sentence)
 
-        # Use tqdm to show progress while applying language detection
-        for idx in tqdm(
-            suitable_sentences.index,
-            desc="Detecting language",
-            total=len(suitable_sentences),
-        ):
-            language_detection_result = self.detect_language(
-                self.df.at[idx, "sentence"]
-            )
-            self.df.at[idx, "lang"] = language_detection_result["lang"]
-            self.df.at[idx, "score"] = language_detection_result["score"]
+    # def strip_newlines(self):
+    #     # Remove newlines from the end of sentences in the 'sentences' column
+    #     self.df["sentence"] = self.df["sentence"].astype(str).str.rstrip("\n")
 
-    def determine_suitability(self):
-        print("determining suitability")
-        # Apply the suitable_sentence function to the 'sentences' column
-        self.df["suitable"] = self.df["sentence"].apply(self.suitable_sentence)
+    # def save(self):
+    #     # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
+    #     # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
+    #     self.append_suitable_sentences_to_jsonl()
 
-    def strip_newlines(self):
-        # Remove newlines from the end of sentences in the 'sentences' column
-        self.df["sentence"] = self.df["sentence"].astype(str).str.rstrip("\n")
+    # def create_dataframe_with_all_sentences(self):
+    #     print("creating dataframe")
+    #     # Creating DataFrame
+    #     data = {"id": [], "sentence": [], "tokens": 0}
+    #
+    #     for doc in self.documents:
+    #         for sentence in doc.sentences:
+    #             data["id"].append(doc.id)
+    #             data["sentence"].append(sentence.text)
+    #             data["tokens"] = sentence.token_count
+    #
+    #     self.df = pd.DataFrame(data)
 
-    def save(self):
-        # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
-        # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
-        self.append_suitable_sentences_to_jsonl()
-
-    def generate_uuid(self):
-        # Generate UUIDs for each sentence and add them to a new 'uuid' column
-        self.df["uuid"] = [str(uuid.uuid4()) for _ in range(len(self.df))]
-
-    def create_dataframe_with_all_sentences(self):
-        print("creating dataframe")
-        # Creating DataFrame
-        data = {"id": [], "sentence": [], "tokens": 0}
-
-        for doc in self.documents:
-            for sentence in doc.sentences:
-                data["id"].append(doc.id)
-                data["sentence"].append(sentence.text)
-                data["tokens"] = sentence.token_count
-
-        self.df = pd.DataFrame(data)
-
-    def dataframe_is_empty(self) -> bool:
-        return self.df.empty
+    # def dataframe_is_empty(self) -> bool:
+    #     return self.df.empty
 
     def read_json_from_disk_and_extract(self):
         logger.info("reading json from disk")
@@ -177,7 +164,7 @@ class RiksdagenAnalyzer(BaseModel):
                             # self.token_count = +document.token_count
                             # self.print_number_of_tokens()
                             self.documents.append(document)
-                            self.create_dataframe_with_all_sentences()
+                            # self.create_dataframe_with_all_sentences()
                             if not self.dataframe_is_empty():
                                 self.generate_uuid()
                                 self.strip_newlines()

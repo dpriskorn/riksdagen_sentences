@@ -56,25 +56,6 @@ class RiksdagenDocument(BaseModel):
         # Count the number of chunks
         return len(self.sentences)
 
-    # def connect_to_db(self) -> None:
-    #     db_file = "database.db"
-    #     # Connect to the database
-    #     self.connection = sqlite3.connect(db_file)
-    #
-    # def initialize_cursors(self) -> None:
-    #     # Create cursors to interact with the database
-    #     self.row_cursor = self.connection.cursor()
-    #     self.row_cursor.row_factory = sqlite3.Row
-    #     self.tuple_cursor = self.connection.cursor()
-    #     self.tuple_cursor.row_factory = None
-    #
-    # def commit_to_database(self) -> None:
-    #     # Don't forget to close the connection when done
-    #     self.connection.commit()
-    #
-    # def close_db(self) -> None:
-    #     self.connection.close()
-    #
     def chunk_text(self):
         # Function to chunk the text
         start = 0
@@ -123,7 +104,9 @@ class RiksdagenDocument(BaseModel):
 
     def iterate_sentences(self, doc: Any):
         for sent in doc.sents:
-            sentence = Sentence(sent=sent, database_handler=self.database_handler)
+            sentence = Sentence(
+                sent=sent, database_handler=self.database_handler, document=self
+            )
             sentence.start()
             # exit()
             # filtered_sentences = [
