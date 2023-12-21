@@ -102,6 +102,7 @@ class DatabaseHandler(BaseModel):
                 document INT NOT NULL,
                 language INT NOT NULL,
                 score FLOAT NOT NULL,
+                UNIQUE (text, document),
                 FOREIGN KEY (document) REFERENCES document(id),
                 FOREIGN KEY (language) REFERENCES language(id)
             );""",
