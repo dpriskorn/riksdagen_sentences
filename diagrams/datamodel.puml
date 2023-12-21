@@ -109,7 +109,7 @@ entity rawtoken_normtoken_linking {
 
 
 ' one to many:
-lexeme_form_id }-- rawtoken
+lexeme_form }-- rawtoken
 normtoken }-- rawtoken
 rawtoken }-- sentence
 sentence }-- document
@@ -124,10 +124,10 @@ rawtoken -- lexical_category
 rawtoken -- language
 
 ' many to many
-rawtoken }--{ raw_norm_linking
-normtoken }--{ raw_norm_linking
+rawtoken }--{ rawtoken_normtoken_linking
+normtoken }--{ rawtoken_normtoken_linking
 rawtoken }--{ rawtoken_sentence_linking
 sentence }--{ rawtoken_sentence_linking
-rawtoken }--{ rawtoken_lexeme_form_id_linking
-lexeme_form_id }--{ rawtoken_lexeme_form_id_linking
+rawtoken }--{ rawtoken_lexeme_form_linking
+lexeme_form }--{ rawtoken_lexeme_form_linking
 @enduml
