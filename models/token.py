@@ -47,7 +47,7 @@ class Token(BaseModel):
 
     @property
     def normalized_token(self) -> str:
-        # todo also clean punctuation
+        """We don't clean away punctuation and other chars here"""
         return str(self.token.text).strip().lower()
 
     @property

@@ -144,7 +144,7 @@ class DatabaseHandler(BaseModel):
                 FOREIGN KEY (sentence) REFERENCES sentence(id),
                 FOREIGN KEY (rawtoken) REFERENCES rawtoken(id)
             );""",
-            """CREATE TABLE IF NOT EXISTS rawtoken_lexeme_form_id_linking (
+            """CREATE TABLE IF NOT EXISTS rawtoken_lexeme_form_linking (
                 rawtoken INT NOT NULL,
                 lexeme INT NOT NULL,
                 form INT NOT NULL,
@@ -457,6 +457,21 @@ class DatabaseHandler(BaseModel):
         query = """
         INSERT OR IGNORE INTO rawtoken_normtoken_linking (normtoken, rawtoken)
         VALUES (?, ?)
+        """
+        params = (
+            token.normtoken_id,
+            token.id
+        )
+        self.tuple_cursor.execute(query, params)
+        self.commit_to_database()
+        logger.info("rawtoken <-> normtoken link inserted")
+
+    def link_lexeme_form_to_rawtoken(self, token: Any):
+        # todo can we do this automatically? no?
+        raise NotImplementedError()
+        query = """
+        INSERT OR IGNORE INTO rawtoken_lexeme_form_linking (rawtoken, lexeme, form)
+        VALUES (?, ?, ?)
         """
         params = (
             token.normtoken_id,
