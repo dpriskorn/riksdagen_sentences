@@ -12,7 +12,7 @@ class Token(BaseModel):
     sentence: Any
 
     def analyze_and_insert(self):
-        if self.is_accepted_token():
+        if self.is_accepted_token:
             print(spacy.explain(self.pos))
             print(f"rawtoken: '{self.rawtoken}'")
             print(f"normtoken: '{self.normalized_token()}'")
@@ -23,7 +23,7 @@ class Token(BaseModel):
     @property
     def id(self) -> int:
         """ID of this rawtoken in the database"""
-        return self.database_handler.get_rawtoken_id(token=self)
+        return self.sentence.database_handler.get_rawtoken_id(token=self)
 
     @property
     def pos_id(self) -> int:
@@ -41,6 +41,7 @@ class Token(BaseModel):
     def normalized_token(self) -> str:
         return str(self.token.text).strip().lower()
 
+    @property
     def is_accepted_token(self) -> bool:
         """We accept a token which is has no
         numeric characters and is not a symbol and

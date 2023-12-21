@@ -138,11 +138,11 @@ class DatabaseHandler(BaseModel):
                 FOREIGN KEY (normtoken_id) REFERENCES normtoken(id)
             );""",
             """CREATE TABLE IF NOT EXISTS rawtoken_sentence_linking (
-                sentence_id INT NOT NULL,
-                rawtoken_id INT NOT NULL,
-                PRIMARY KEY (sentence_id, rawtoken_id),
-                FOREIGN KEY (sentence_id) REFERENCES sentence(id),
-                FOREIGN KEY (rawtoken_id) REFERENCES rawtoken(id)
+                sentence INT NOT NULL,
+                rawtoken INT NOT NULL,
+                PRIMARY KEY (sentence, rawtoken),
+                FOREIGN KEY (sentence) REFERENCES sentence(id),
+                FOREIGN KEY (rawtoken) REFERENCES rawtoken(id)
             );""",
             """CREATE TABLE IF NOT EXISTS rawtoken_lexeme_form_id_linking (
                 rawtoken INT NOT NULL,
@@ -326,13 +326,13 @@ class DatabaseHandler(BaseModel):
             WHERE text = ? and lexical_category = ?;
         """
         self.tuple_cursor.execute(query, (token.rawtoken, token.pos_id))
-        dataset_id = self.tuple_cursor.fetchone()[0]
-        logger.info(f"Got dataset id: {dataset_id}")
-        return dataset_id
+        rowid = self.tuple_cursor.fetchone()[0]
+        logger.info(f"Got rawtoken id: {rowid}")
+        return rowid
 
     def insert_sentence(self, sentence: Any):
         query = """
-        INSERT INTO sentence (text, uuid, document, language, score)
+        INSERT OR IGNORE INTO sentence (text, uuid, document, language, score)
         VALUES (?, ?, ?, ?, ?);
         """
         params = (
@@ -398,4 +398,34 @@ class DatabaseHandler(BaseModel):
         self.tuple_cursor.execute(query, params)
         rowid = self.tuple_cursor.fetchone()[0]
         logger.info(f"Got document id: {rowid}")
+        return rowid
+
+    def link_sentence_to_rawtokens(self, sentence: Any):
+        for token in sentence.tokens:
+            query = """
+            INSERT OR IGNORE INTO rawtoken_sentence_linking (sentence, rawtoken)
+            VALUES (?, ?)
+            """
+            params = (
+                sentence.id,
+                token.id
+            )
+            self.tuple_cursor.execute(query, params)
+            self.commit_to_database()
+        logger.info("rawtoken <-> sentence links inserted")
+
+    def get_sentence_id(self, sentence: Any) -> int:
+        query = """
+            SELECT id
+            FROM sentence
+            WHERE text = ? and document = ? and language = ?
+        """
+        params = (
+            sentence.sentence,
+            sentence.document.id,
+            sentence.language_id,
+        )
+        self.tuple_cursor.execute(query, params)
+        rowid = self.tuple_cursor.fetchone()[0]
+        logger.info(f"Got sentence id: {rowid}")
         return rowid

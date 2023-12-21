@@ -92,14 +92,15 @@ class Sentence(BaseModel):
         if self.is_suitable_sentence:
             self.generate_uuid()
             self.database_handler.insert_sentence(sentence=self)
-            # self.database_handler.link_sentence_to_rawtokens(sentence=self)
+            self.database_handler.link_sentence_to_rawtokens(sentence=self)
             # todo iterate self.tokens and link between this sentence and their id
 
     def iterate_tokens(self):
         for token_ in self.sent:
             token = Token(token=token_, sentence=self)
             token.analyze_and_insert()
-            self.tokens.append(token)
+            if token.is_accepted_token:
+                self.tokens.append(token)
 
     def clean_and_print_sentence(self):
         logger.info(
