@@ -7,13 +7,10 @@ import pymysql
 import yaml
 from pydantic import BaseModel
 
+from models.exceptions import PostagError
 from models.token import Token
 
 logger = logging.getLogger(__name__)
-
-
-class PostagError(BaseException):
-    pass
 
 
 class DatabaseHandler(BaseModel):

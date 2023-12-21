@@ -1,0 +1,2 @@
+class PostagError(BaseException):
+    pass
