@@ -6,6 +6,7 @@ from typing import Dict, Any
 import yaml
 from pydantic import BaseModel
 
+from models.sentence import Sentence
 from models.token import Token
 
 logger = logging.getLogger(__name__)
@@ -59,7 +60,7 @@ class DatabaseHandler(BaseModel):
         sql_commands = [
             """CREATE TABLE IF NOT EXISTS lexical_category (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    qid INT UNIQUE,
+                    qid INT,
                     postag TEXT UNIQUE NOT NULL
             );""",
             """CREATE TABLE IF NOT EXISTS language (
@@ -284,9 +285,11 @@ class DatabaseHandler(BaseModel):
             WHERE postag = ?;
         """
         self.tuple_cursor.execute(query, (token.pos,))
-        rowid = self.tuple_cursor.fetchone()[0]
-        if not rowid:
-            raise PostagError()
+        result = self.tuple_cursor.fetchone()
+        if not result:
+            raise PostagError(f"postag {token.pos} not found in database")
+        else:
+            rowid = result[0]
         print(f"Got lexical category rowid: {rowid}")
         return rowid
 
@@ -305,7 +308,16 @@ class DatabaseHandler(BaseModel):
             FROM rawtoken
             WHERE text = ? and lexical_category_id = ?;
         """
-        self.tuple_cursor.execute(query, (token.rawtoken,token.pos_id))
+        self.tuple_cursor.execute(query, (token.rawtoken, token.pos_id))
         dataset_id = self.tuple_cursor.fetchone()[0]
         print(f"Got dataset id: {dataset_id}")
         return dataset_id
+
+    def insert_sentence(self, sentence: Any):
+        raise NotImplementedError()
+        query = """
+        """
+        params = (token.pos_id, token.rawtoken)
+        self.tuple_cursor.execute(query, params)
+        self.commit_to_database()
+        logger.info("rawtoken inserted")

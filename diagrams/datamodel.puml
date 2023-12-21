@@ -2,10 +2,11 @@
 '' Store information about token, lexical category and
 
 '' This is needed to distinguish forms
+'' VERB and AUX link to the same qid
 entity lexical_category {
     + id INT PRIMARY UNIQUE
-    + qid INT UNIQUE
-    + name_en TEXT
+    + qid INT
+    + postag TEXT
 }
 
 '' The ISO 639-1 code is stored like in the yml like so: 'en'
