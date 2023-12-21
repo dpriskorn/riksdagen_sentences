@@ -91,26 +91,6 @@ class RiksdagenAnalyzer(BaseModel):
             self.df.at[idx, "lang"] = language_detection_result["lang"]
             self.df.at[idx, "score"] = language_detection_result["score"]
 
-    @staticmethod
-    def suitable_sentence(sentence):
-        # Removing punctuation
-        sentence_without_punctuation = "".join(
-            char for char in sentence if char not in string.punctuation
-        )
-
-        # Split the sentence into words and remove words containing numbers
-        words = [
-            word
-            for word in sentence_without_punctuation.split()
-            if not any(char.isdigit() for char in word)
-        ]
-
-        # Check if the sentence has more than 5 words after removing numeric words
-        if len(words) > 5:
-            return True
-        else:
-            return False
-
     def determine_suitability(self):
         print("determining suitability")
         # Apply the suitable_sentence function to the 'sentences' column
@@ -188,7 +168,7 @@ class RiksdagenAnalyzer(BaseModel):
                                 dataset_id=self.dataset_handler.dataset_id,
                                 text=text or "",
                                 html=html or "",
-                                database_handler=self.database_handler
+                                database_handler=self.database_handler,
                             )
                             self.database_handler.add_document_to_database(
                                 document=document

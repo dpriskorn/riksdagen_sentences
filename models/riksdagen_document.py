@@ -130,4 +130,3 @@ class RiksdagenDocument(BaseModel):
             #     Sentence(text=sent.text) for sent in doc.sents if sent.text.strip()
             # ]
             # self.sentences.extend(filtered_sentences)
-
