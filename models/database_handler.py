@@ -3,6 +3,7 @@ import sqlite3
 from sqlite3 import Cursor, DatabaseError
 from typing import Dict, Any
 
+import pymysql
 import yaml
 from pydantic import BaseModel
 
@@ -34,7 +35,7 @@ class DatabaseHandler(BaseModel):
     def connect_and_setup(self):
         self.load_languages_from_yaml()
         self.load_lexical_categories_from_yaml()
-        self.connect_to_db()
+        self.connect_to_sqlite_db()
         self.initialize_cursors()
         self.create_tables()
         self.create_indexes()
@@ -42,10 +43,37 @@ class DatabaseHandler(BaseModel):
         self.setup_lexical_categories()
         self.commit_to_database()
 
-    def connect_to_db(self) -> None:
+    def connect_to_sqlite_db(self) -> None:
         db_file = "database.db"
         # Connect to the database
         self.connection = sqlite3.connect(db_file)
+
+    def connect_to_mariadb(self):
+        """Connect to a local database"""
+        # Connection parameters
+        unix_socket = "/tmp/mysql. sock"
+        user = "riksdagen"
+        password = "password"
+        database = "riksdagen"
+
+        # Connect to the database
+        try:
+            self.connection = pymysql.connect(
+                unix_socket=unix_socket, user=user, passwd=password, db=database
+            )
+            # cursor = connection.cursor()
+
+            # # Execute a sample query
+            # cursor.execute("SELECT VERSION()")
+            # version = cursor.fetchone()
+            # print("Database version: %s" % version)
+            #
+            # # Close the connection
+            # cursor.close()
+            # connection.close()
+
+        except pymysql.Error as e:
+            print("Error: %s" % e)
 
     def initialize_cursors(self) -> None:
         # Create cursors to interact with the database
@@ -340,7 +368,7 @@ class DatabaseHandler(BaseModel):
             sentence.uuid,
             sentence.document.id,
             sentence.language_id,
-            sentence.score_id
+            sentence.score_id,
         )
         self.tuple_cursor.execute(query, params)
         self.commit_to_database()
@@ -351,9 +379,7 @@ class DatabaseHandler(BaseModel):
         INSERT OR IGNORE INTO score (value)
         VALUES (?)
         """
-        params = (
-            sentence.score,
-        )
+        params = (sentence.score,)
         self.tuple_cursor.execute(query, params)
         self.commit_to_database()
         logger.info("score inserted")
@@ -364,9 +390,7 @@ class DatabaseHandler(BaseModel):
             FROM score
             WHERE value = ?
         """
-        params = (
-            sentence.score,
-        )
+        params = (sentence.score,)
         self.tuple_cursor.execute(query, params)
         score_id = self.tuple_cursor.fetchone()[0]
         logger.info(f"Got score id: {score_id}")
@@ -378,9 +402,7 @@ class DatabaseHandler(BaseModel):
             FROM language
             WHERE iso_code = ?
         """
-        params = (
-            sentence.detected_language.lower(),
-        )
+        params = (sentence.detected_language.lower(),)
         self.tuple_cursor.execute(query, params)
         rowid = self.tuple_cursor.fetchone()[0]
         logger.info(f"Got language id: {rowid}")
@@ -392,9 +414,7 @@ class DatabaseHandler(BaseModel):
             FROM document
             WHERE external_id = ?
         """
-        params = (
-            document.external_id,
-        )
+        params = (document.external_id,)
         self.tuple_cursor.execute(query, params)
         rowid = self.tuple_cursor.fetchone()[0]
         logger.info(f"Got document id: {rowid}")
@@ -406,10 +426,7 @@ class DatabaseHandler(BaseModel):
             INSERT OR IGNORE INTO rawtoken_sentence_linking (sentence, rawtoken)
             VALUES (?, ?)
             """
-            params = (
-                sentence.id,
-                token.id
-            )
+            params = (sentence.id, token.id)
             self.tuple_cursor.execute(query, params)
             self.commit_to_database()
         logger.info("rawtoken <-> sentence links inserted")
@@ -436,9 +453,7 @@ class DatabaseHandler(BaseModel):
         (text)
         VALUES (?);
         """
-        params = (
-            token.normalized_token,
-        )
+        params = (token.normalized_token,)
         self.tuple_cursor.execute(query, params)
         self.commit_to_database()
         logger.info("normtoken inserted")
@@ -458,10 +473,7 @@ class DatabaseHandler(BaseModel):
         INSERT OR IGNORE INTO rawtoken_normtoken_linking (normtoken, rawtoken)
         VALUES (?, ?)
         """
-        params = (
-            token.normtoken_id,
-            token.id
-        )
+        params = (token.normtoken_id, token.id)
         self.tuple_cursor.execute(query, params)
         self.commit_to_database()
         logger.info("rawtoken <-> normtoken link inserted")
@@ -469,14 +481,14 @@ class DatabaseHandler(BaseModel):
     def link_lexeme_form_to_rawtoken(self, token: Any):
         # todo can we do this automatically? no?
         raise NotImplementedError()
-        query = """
-        INSERT OR IGNORE INTO rawtoken_lexeme_form_linking (rawtoken, lexeme, form)
-        VALUES (?, ?, ?)
-        """
-        params = (
-            token.normtoken_id,
-            token.id
-        )
-        self.tuple_cursor.execute(query, params)
-        self.commit_to_database()
-        logger.info("rawtoken <-> normtoken link inserted")
+        # query = """
+        # INSERT OR IGNORE INTO rawtoken_lexeme_form_linking (rawtoken, lexeme, form)
+        # VALUES (?, ?, ?)
+        # """
+        # params = (
+        #     token.normtoken_id,
+        #     token.id
+        # )
+        # self.tuple_cursor.execute(query, params)
+        # self.commit_to_database()
+        # logger.info("rawtoken <-> normtoken link inserted")

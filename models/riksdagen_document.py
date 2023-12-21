@@ -113,4 +113,3 @@ class RiksdagenDocument(BaseModel):
                 sent=sent, database_handler=self.database_handler, document=self
             )
             sentence.analyze_and_insert()
-
