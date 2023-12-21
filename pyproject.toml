@@ -23,6 +23,7 @@ lxml = "^4.9.3"
 fasttext-langdetect = { git = "https://github.com/dpriskorn/fasttext-langdetect.git", branch = "main"}
 dask = "^2023.11.0"
 pyyaml = "^6.0.1"
+pymysql = "^1.1.0"
 
 
 [tool.poetry.group.dev.dependencies]
