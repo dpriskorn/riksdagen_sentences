@@ -1,14 +1,15 @@
+import logging
 from typing import Any
 
 import spacy
 from pydantic import BaseModel
 
-from models.database_handler import DatabaseHandler
+logger = logging.getLogger(__name__)
 
 
 class Token(BaseModel):
     token: Any
-    database_handler: DatabaseHandler
+    database_handler: Any
 
     def start(self):
         if self.is_accepted_token():

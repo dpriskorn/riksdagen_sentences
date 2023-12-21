@@ -25,12 +25,12 @@ class Sentence(BaseModel):
             mytoken = Token(token=token, database_handler=self.database_handler)
             mytoken.start()
 
-    def clean_and_print_sentence(self, sent):
+    def clean_and_print_sentence(self):
         # Remove newlines, digits and a selection of characters
         cleaned_sentence = re.sub(
             r"\d+",
             "",
-            sent.text.replace("\n", "")
+            self.sent.text.replace("\n", "")
             .replace("\r", "")
             .replace(":", "")
             .replace(",", "")
