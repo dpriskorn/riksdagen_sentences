@@ -15,15 +15,22 @@ class Token(BaseModel):
         if self.is_accepted_token:
             print(spacy.explain(self.pos))
             print(f"rawtoken: '{self.rawtoken}'")
-            print(f"normtoken: '{self.normalized_token()}'")
+            print(f"normtoken: '{self.normalized_token}'")
             self.sentence.database_handler.insert_rawtoken(token=self)
+            self.sentence.database_handler.insert_normtoken(token=self)
+            self.sentence.database_handler.link_normtoken_to_rawtoken(token=self)
         else:
-            print(f"discarded: text: {self.rawtoken}, pos: {self.pos}")
+            print(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
 
     @property
     def id(self) -> int:
         """ID of this rawtoken in the database"""
         return self.sentence.database_handler.get_rawtoken_id(token=self)
+
+    @property
+    def normtoken_id(self) -> int:
+        """ID of the corresponding normtoken for this token in the database"""
+        return self.sentence.database_handler.get_normtoken_id(token=self)
 
     @property
     def pos_id(self) -> int:
@@ -38,7 +45,9 @@ class Token(BaseModel):
     def rawtoken(self) -> str:
         return str(self.token.text)
 
+    @property
     def normalized_token(self) -> str:
+        # todo also clean punctuation
         return str(self.token.text).strip().lower()
 
     @property

@@ -52,7 +52,8 @@ entity sentence {
     + text TEXT NOT NULL
     + uuid TEXT NOT NULL UNIQUE
     + document INT NOT NULL
-    + langscore INT NOT NULL
+    + score INT NOT NULL
+    + language INT NOT NULL
 }
 
 '' linking table
@@ -118,7 +119,8 @@ dataset }-- provider
 language }-- langscore
 
 ' one to one
-sentence -- langscore
+sentence -- score
+sentence -- language
 rawtoken -- lexical_category
 rawtoken -- langscore
 rawtoken -- language

@@ -106,10 +106,10 @@ class DatabaseHandler(BaseModel):
                 FOREIGN KEY(language) REFERENCES language(id),
                 FOREIGN KEY(score) REFERENCES score(id)
             );""",
-            """CREATE TABLE IF NOT EXISTS lexeme_form_id (
-                lexeme_id INT NOT NULL,
-                form_id INT NOT NULL,
-                PRIMARY KEY (lexeme_id, form_id)
+            """CREATE TABLE IF NOT EXISTS lexeme_form (
+                lexeme INT NOT NULL,
+                form INT NOT NULL,
+                PRIMARY KEY (lexeme, form)
             );""",
             """CREATE TABLE IF NOT EXISTS rawtoken (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -130,12 +130,12 @@ class DatabaseHandler(BaseModel):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 text TEXT NOT NULL UNIQUE
             );""",
-            """CREATE TABLE IF NOT EXISTS raw_norm_linking (
-                rawtoken_id INT NOT NULL,
-                normtoken_id INT NOT NULL,
-                PRIMARY KEY (rawtoken_id, normtoken_id),
-                FOREIGN KEY (rawtoken_id) REFERENCES rawtoken(id),
-                FOREIGN KEY (normtoken_id) REFERENCES normtoken(id)
+            """CREATE TABLE IF NOT EXISTS rawtoken_normtoken_linking (
+                rawtoken INT NOT NULL,
+                normtoken INT NOT NULL,
+                PRIMARY KEY (rawtoken, normtoken),
+                FOREIGN KEY (rawtoken) REFERENCES rawtoken(id),
+                FOREIGN KEY (normtoken) REFERENCES normtoken(id)
             );""",
             """CREATE TABLE IF NOT EXISTS rawtoken_sentence_linking (
                 sentence INT NOT NULL,
@@ -146,12 +146,12 @@ class DatabaseHandler(BaseModel):
             );""",
             """CREATE TABLE IF NOT EXISTS rawtoken_lexeme_form_id_linking (
                 rawtoken INT NOT NULL,
-                lexeme_id INT NOT NULL,
-                form_id INT NOT NULL,
-                PRIMARY KEY (rawtoken, lexeme_id, form_id),
+                lexeme INT NOT NULL,
+                form INT NOT NULL,
+                PRIMARY KEY (rawtoken, lexeme, form),
                 FOREIGN KEY (rawtoken) REFERENCES rawtoken(id),
-                FOREIGN KEY (lexeme_id) REFERENCES lexeme_form_id(lexeme_id),
-                FOREIGN KEY (form_id) REFERENCES lexeme_form_id(form_id)
+                FOREIGN KEY (lexeme) REFERENCES lexeme_form(lexeme),
+                FOREIGN KEY (form) REFERENCES lexeme_form(form)
             );""",
         ]
         for query in sql_commands:
@@ -429,3 +429,39 @@ class DatabaseHandler(BaseModel):
         rowid = self.tuple_cursor.fetchone()[0]
         logger.info(f"Got sentence id: {rowid}")
         return rowid
+
+    def insert_normtoken(self, token: Token):
+        query = """
+        INSERT OR IGNORE INTO normtoken 
+        (text)
+        VALUES (?);
+        """
+        params = (
+            token.normalized_token,
+        )
+        self.tuple_cursor.execute(query, params)
+        self.commit_to_database()
+        logger.info("normtoken inserted")
+
+    def get_normtoken_id(self, token: Token):
+        query = """SELECT id
+            FROM normtoken
+            WHERE text = ? 
+        """
+        self.tuple_cursor.execute(query, (token.normalized_token,))
+        rowid = self.tuple_cursor.fetchone()[0]
+        logger.info(f"Got normtoken id: {rowid}")
+        return rowid
+
+    def link_normtoken_to_rawtoken(self, token: Any):
+        query = """
+        INSERT OR IGNORE INTO rawtoken_normtoken_linking (normtoken, rawtoken)
+        VALUES (?, ?)
+        """
+        params = (
+            token.normtoken_id,
+            token.id
+        )
+        self.tuple_cursor.execute(query, params)
+        self.commit_to_database()
+        logger.info("rawtoken <-> normtoken link inserted")
