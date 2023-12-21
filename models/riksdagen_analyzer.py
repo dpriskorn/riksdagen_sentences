@@ -151,7 +151,7 @@ class RiksdagenAnalyzer(BaseModel):
                         ):
                             # We got a good document with content
                             document = RiksdagenDocument(
-                                id=dok_id,
+                                external_id=dok_id,
                                 dataset_id=self.dataset_handler.dataset_id,
                                 text=text or "",
                                 html=html or "",
@@ -173,7 +173,7 @@ class RiksdagenAnalyzer(BaseModel):
                                 self.append_suitable_sentences_to_jsonl()
                             else:
                                 logger.warning(
-                                    f"Document with id {document.id} with path "
+                                    f"Document with id {document.external_id} with path "
                                     f"{file_path} did not have any sentences"
                                 )
                                 self.skipped_documents_count += 1

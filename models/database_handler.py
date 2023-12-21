@@ -99,7 +99,7 @@ class DatabaseHandler(BaseModel):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 text TEXT NOT NULL,
                 uuid TEXT NOT NULL UNIQUE,
-                document INT NOT NULL,
+                document INTEGER NOT NULL,
                 score INT NOT NULL,
                 language INT NOT NULL,
                 UNIQUE (text, document),
@@ -280,8 +280,8 @@ class DatabaseHandler(BaseModel):
     def add_document_to_database(self, document: Any):
         print("Adding document to database")
         # Assuming 'documents' is the name of the table where documents are stored
-        query = "INSERT OR IGNORE INTO document " "(external_id, dataset) VALUES (?, ?)"
-        values = (document.id, document.dataset_id)
+        query = "INSERT OR IGNORE INTO document (external_id, dataset) VALUES (?, ?)"
+        values = (document.external_id, document.dataset_id)
         try:
             self.row_cursor.execute(query, values)
             self.connection.commit()
@@ -385,4 +385,18 @@ class DatabaseHandler(BaseModel):
         self.tuple_cursor.execute(query, params)
         rowid = self.tuple_cursor.fetchone()[0]
         logger.info(f"Got language id: {rowid}")
+        return rowid
+
+    def get_document_id(self, document: Any) -> int:
+        query = """
+            SELECT id
+            FROM document
+            WHERE external_id = ?
+        """
+        params = (
+            document.external_id,
+        )
+        self.tuple_cursor.execute(query, params)
+        rowid = self.tuple_cursor.fetchone()[0]
+        logger.info(f"Got document id: {rowid}")
         return rowid

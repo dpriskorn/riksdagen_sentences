@@ -21,7 +21,7 @@ class RiksdagenDocument(BaseModel):
     We could support storing title for documents,
     but it is not essential so we skip it for now"""
 
-    id: str
+    external_id: str
     dataset_id: int
     text: str = ""
     html: str = ""
@@ -36,6 +36,11 @@ class RiksdagenDocument(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+
+    @property
+    def id(self) -> int:
+        """ID of this document in the database"""
+        return self.database_handler.get_document_id(document=self)
 
     @property
     def token_count(self) -> int:
@@ -113,3 +118,4 @@ class RiksdagenDocument(BaseModel):
             #     Sentence(text=sent.text) for sent in doc.sents if sent.text.strip()
             # ]
             # self.sentences.extend(filtered_sentences)
+
