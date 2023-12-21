@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-
+import re
 import spacy
 from pydantic import BaseModel
 
@@ -17,7 +17,6 @@ class Token(BaseModel):
             print(f"rawtoken: '{self.rawtoken}'")
             print(f"normtoken: '{self.normalized_token()}'")
             self.database_handler.insert_rawtoken(token=self)
-            exit()
         else:
             print(f"discarded: text: {self.rawtoken}, pos: {self.pos}")
 
@@ -37,17 +36,38 @@ class Token(BaseModel):
 
     @property
     def rawtoken(self) -> str:
-        return self.token.text
+        return str(self.token.text)
 
     def normalized_token(self) -> str:
         return str(self.token.text).strip().lower()
 
     def is_accepted_token(self) -> bool:
-        """We accept a token which is not only
-        numeric and not symbol and not punctuation"""
+        """We accept a token which is has no
+        numeric characters and is not a symbol and
+        not punctuation"""
         unaccepted_postags = ["SPACE", "PUNCT", "SYM", "X"]
-        numeric = str(self.token.text).strip().isnumeric()
-        if self.token.pos_ not in unaccepted_postags and not numeric:
-            return True
-        else:
-            return False
+        if self.cleaned_token:
+            has_numeric = any(char.isnumeric() for char in self.rawtoken)
+            if (
+                self.token.pos_ not in unaccepted_postags
+                and not has_numeric
+            ):
+                return True
+        return False
+
+    @property
+    def cleaned_token(self) -> str:
+        # Remove newlines, digits and a selection of characters
+        return re.sub(
+            r"\d+",
+            "",
+            self.rawtoken.replace(":", "")
+            .replace(",", "")
+            .replace(".", "")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("-", "")
+            .replace("–", "")
+            .replace("/", "")
+            .strip(),
+        )
