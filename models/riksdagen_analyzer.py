@@ -66,52 +66,6 @@ class RiksdagenAnalyzer(BaseModel):
             f"(because of missing or bad data): {self.skipped_documents_count}"
         )
 
-    # def detect_language_for_all_sentences(self):
-    #     print("Determining language for suitable sentences")
-    #     suitable_sentences = self.df[self.df["suitable"]]["sentence"]
-    #
-    #     # Use tqdm to show progress while applying language detection
-    #     for idx in tqdm(
-    #         suitable_sentences.index,
-    #         desc="Detecting language",
-    #         total=len(suitable_sentences),
-    #     ):
-    #         language_detection_result = self.detect_language(
-    #             self.df.at[idx, "sentence"]
-    #         )
-    #         self.df.at[idx, "lang"] = language_detection_result["lang"]
-    #         self.df.at[idx, "score"] = language_detection_result["score"]
-
-    # def determine_suitability(self):
-    #     print("determining suitability")
-    #     # Apply the suitable_sentence function to the 'sentences' column
-    #     self.df["suitable"] = self.df["sentence"].apply(self.suitable_sentence)
-
-    # def strip_newlines(self):
-    #     # Remove newlines from the end of sentences in the 'sentences' column
-    #     self.df["sentence"] = self.df["sentence"].astype(str).str.rstrip("\n")
-
-    # def save(self):
-    #     # self.df.to_pickle(f"{self.filename}.pickle.xz", compression="xz")
-    #     # self.df.to_csv(f"{self.filename}.csv.xz", compression="xz")
-    #     self.append_suitable_sentences_to_jsonl()
-
-    # def create_dataframe_with_all_sentences(self):
-    #     print("creating dataframe")
-    #     # Creating DataFrame
-    #     data = {"id": [], "sentence": [], "tokens": 0}
-    #
-    #     for doc in self.documents:
-    #         for sentence in doc.sentences:
-    #             data["id"].append(doc.id)
-    #             data["sentence"].append(sentence.text)
-    #             data["tokens"] = sentence.token_count
-    #
-    #     self.df = pd.DataFrame(data)
-
-    # def dataframe_is_empty(self) -> bool:
-    #     return self.df.empty
-
     def read_json_from_disk_and_extract(self):
         logger.info("reading json from disk")
         file_paths = []
@@ -161,25 +115,6 @@ class RiksdagenAnalyzer(BaseModel):
                                 document=document
                             )
                             document.extract_sentences()
-                            # self.token_count = +document.token_count
-                            # self.print_number_of_tokens()
-                            self.documents.append(document)
-                            # self.create_dataframe_with_all_sentences()
-                            if not self.dataframe_is_empty():
-                                self.generate_uuid()
-                                self.strip_newlines()
-                                self.determine_suitability()
-                                self.detect_language_for_all_sentences()
-                                self.append_suitable_sentences_to_jsonl()
-                            else:
-                                logger.warning(
-                                    f"Document with id {document.external_id} with path "
-                                    f"{file_path} did not have any sentences"
-                                )
-                                self.skipped_documents_count += 1
-                            # Reset documents to avoid getting killed by the
-                            # kernel because we run out of memory
-                            self.documents = []
                         else:
                             self.skipped_documents_count += 1
                             logger.info(
@@ -217,6 +152,6 @@ class RiksdagenAnalyzer(BaseModel):
         self.parser.add_argument(
             "--analyze",
             type=str,
-            help="Analyze a document series. One of ['departementserien', 'proposition']",
+            help="Analyze a document series and save to a SQLite database. One of ['departementserien', 'proposition']",
             required=True,
         )

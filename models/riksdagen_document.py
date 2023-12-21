@@ -112,10 +112,5 @@ class RiksdagenDocument(BaseModel):
             sentence = Sentence(
                 sent=sent, database_handler=self.database_handler, document=self
             )
-            sentence.start()
-            # exit()
-            # filtered_sentences = [
-            #     Sentence(text=sent.text) for sent in doc.sents if sent.text.strip()
-            # ]
-            # self.sentences.extend(filtered_sentences)
+            sentence.analyze_and_insert()
 

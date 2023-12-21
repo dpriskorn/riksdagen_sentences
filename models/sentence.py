@@ -82,7 +82,7 @@ class Sentence(BaseModel):
             .strip(),
         )
 
-    def start(self):
+    def analyze_and_insert(self):
         self.clean_and_print_sentence()
         # We insert and store valuable tokens even if the
         # sentence is not deemed suitable for our purposes
