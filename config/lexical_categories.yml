@@ -1,0 +1,21 @@
+# Source: https://github.com/fnielsen/ordia/blob/db4af5029044f5010204ec6516549ccb318dc259/ordia/query.py
+# Author: Finn Nielsen
+# License: Apache 2.0, see https://github.com/fnielsen/ordia/blob/master/LICENSE
+"ADJ": "Q34698"
+"ADV": "Q380057"
+"INTJ": "Q83034"
+"NOUN": "Q1084"
+"PROPB": "Q147276"
+"VERB": "Q24905"
+"ADP": "Q134316"
+"AUX": "Q24905"
+"CCONJ": "Q36484"
+"DET": "Q576271"
+"NUM": "Q63116"
+"PART": "Q184943"
+"PRON": "Q36224"
+"PROPN": "Q147276"
+"SCONJ": "Q36484"
+#"SYM": "Q80071"
+#"X": ""
+#"PUNCT": "Q1668151"

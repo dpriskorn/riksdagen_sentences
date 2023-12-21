@@ -2,20 +2,18 @@ import argparse
 import json
 import logging
 import os
-import sqlite3
 import string
 import uuid
-from sqlite3 import Cursor
-from typing import List, Dict, Any
+from typing import List, Dict
 
 import pandas as pd
-import yaml
 from ftlangdetect import detect
 from pandas import DataFrame
 from pydantic import BaseModel
 from tqdm import tqdm
 
-import config
+from models.database_handler import DatabaseHandler
+from models.dataset_handler import DatasetHandler
 from models.riksdagen_document import RiksdagenDocument
 
 logger = logging.getLogger(__name__)
@@ -25,7 +23,7 @@ class RiksdagenAnalyzer(BaseModel):
     """This model extracts sentences from a supported riksdagen document type
     and stores the result in a jsonl format."""
 
-    riksdagen_document_type: str = ""
+    riksdagen_dataset_title: str = ""
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = 0  # zero means no limit
@@ -35,63 +33,25 @@ class RiksdagenAnalyzer(BaseModel):
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     jsonl_path_to_load: str = ""
     arguments: argparse.Namespace = argparse.Namespace()
-    languages: Dict[Any, Any] = dict()
-    language_config_path: str = "config/languages.yml"
-    connection: Any = None
-    tuple_cursor: Cursor = None
-    row_cursor: Cursor = None
+    database_handler: DatabaseHandler = DatabaseHandler()
+    dataset_handler: DatasetHandler = DatasetHandler()
 
     class Config:
         arbitrary_types_allowed = True
 
-    @property
-    def workdirectory(self) -> str:
-        return config.supported_riksdagen_document_types[self.riksdagen_document_type][
-            "workdirectory"
-        ]
-
-    @property
-    def filename(self):
-        return config.supported_riksdagen_document_types[self.riksdagen_document_type][
-            "filename"
-        ]
-
     def start(self):
-        self.load_languages_from_yaml()
-        self.connect_to_db()
-        self.initialize_cursors()
-        self.create_tables()
-        self.create_indexes()
-        self.insert_langauges_from_yaml()
-        self.commit_and_close_db()
-        exit()
-        self.read_json_from_disk_and_extract()
-        self.print_number_of_skipped_documents()
-        self.print_number_of_tokens()
+        self.database_handler.connect_and_setup()
+        self.setup_dataset()
+        if self.dataset_handler.dataset_id:
+            self.read_json_from_disk_and_extract()
+            self.print_number_of_skipped_documents()
+            self.print_number_of_tokens()
         # self.generate_document_term_matix()
 
-    def load_languages_from_yaml(self):
-        # Load YAML into a dictionary
-        with open(self.language_config_path, 'r') as file:
-            # Read YAML content from the file
-            self.languages = yaml.safe_load(file)
-
-    def insert_langauges_from_yaml(self):
-        print("Inserting languages from YAML")
-        # Construct the SQL INSERT query
-        query = '''
-                INSERT OR IGNORE INTO language (name_en, iso_code, qid)
-                VALUES (?, ?, ?)
-                '''
-
-        # Iterate through each language and insert its data
-        for lang_code, lang_data in self.languages['development'].items():
-            language_name_en = lang_data['language_name_en']
-            iso_code = lang_code
-            qid = lang_data['language_qid']
-
-            # Execute the query with the extracted values for each language
-            self.tuple_cursor.execute(query, (language_name_en, iso_code, qid))
+    def setup_dataset(self):
+        self.dataset_handler.database_handler = self.database_handler
+        self.dataset_handler.riksdagen_dataset_title = self.riksdagen_dataset_title
+        self.dataset_handler.get_dataset_id()
 
     def handle_arguments(self):
         self.setup_argparse()
@@ -101,7 +61,7 @@ class RiksdagenAnalyzer(BaseModel):
         if self.arguments.offset:
             self.document_offset = self.arguments.offset
         if self.arguments.analyze:
-            self.riksdagen_document_type = self.arguments.analyze
+            self.riksdagen_dataset_title = self.arguments.analyze
             self.start()
 
     def print_number_of_skipped_documents(self):
@@ -186,9 +146,9 @@ class RiksdagenAnalyzer(BaseModel):
         return self.df.empty
 
     def read_json_from_disk_and_extract(self):
-        # print("reading json from disk")
+        logger.info("reading json from disk")
         file_paths = []
-        for root, dirs, files in os.walk(self.workdirectory):
+        for root, dirs, files in os.walk(self.dataset_handler.workdirectory):
             for file in files:
                 if file.endswith(".json"):
                     file_paths.append(os.path.join(root, file))
@@ -222,12 +182,20 @@ class RiksdagenAnalyzer(BaseModel):
                         if dok_id is not None and (
                             text is not None or html is not None
                         ):
+                            # We got a good document with content
                             document = RiksdagenDocument(
-                                id=dok_id, text=text or "", html=html or ""
+                                id=dok_id,
+                                dataset_id=self.dataset_handler.dataset_id,
+                                text=text or "",
+                                html=html or "",
+                                database_handler=self.database_handler
+                            )
+                            self.database_handler.add_document_to_database(
+                                document=document
                             )
                             document.extract_sentences()
-                            self.token_count = +document.token_count
-                            self.print_number_of_tokens()
+                            # self.token_count = +document.token_count
+                            # self.print_number_of_tokens()
                             self.documents.append(document)
                             self.create_dataframe_with_all_sentences()
                             if not self.dataframe_is_empty():
@@ -267,7 +235,9 @@ class RiksdagenAnalyzer(BaseModel):
         print(f"Total number of tokens: {self.token_count}")
 
     def setup_argparse(self):
-        self.parser = argparse.ArgumentParser(description="Parse open data from Riksdagen")
+        self.parser = argparse.ArgumentParser(
+            description="Parse open data from Riksdagen"
+        )
         # self.parser.add_argument(
         #     "-l", "--load-jsonl", type=str, help="Load JSONL file", required=False
         # )
@@ -283,96 +253,3 @@ class RiksdagenAnalyzer(BaseModel):
             help="Analyze a document series. One of ['departementserien', 'proposition']",
             required=True,
         )
-
-    @staticmethod
-    def item_int(qid) -> int:
-        return int(qid[1:])
-
-    def connect_to_db(self) -> None:
-        db_file = "database.db"
-        # Connect to the database
-        self.connection = sqlite3.connect(db_file)
-
-    def initialize_cursors(self) -> None:
-        # Create cursors to interact with the database
-        self.row_cursor = self.connection.cursor()
-        self.row_cursor.row_factory = sqlite3.Row
-        self.tuple_cursor = self.connection.cursor()
-        self.tuple_cursor.row_factory = None
-
-    def create_tables(self):
-        logger.info("Creating tables")
-        sql_queries = [
-            '''CREATE TABLE IF NOT EXISTS language (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name_en TEXT NOT NULL UNIQUE,
-                iso_code TEXT NOT NULL UNIQUE,
-                qid TEXT NOT NULL UNIQUE
-            );''',
-
-            '''CREATE TABLE IF NOT EXISTS provider (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                qid TEXT NOT NULL
-            );''',
-
-            '''CREATE TABLE IF NOT EXISTS collection (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                qid TEXT NOT NULL,
-                provider INT NOT NULL,
-                FOREIGN KEY (provider) REFERENCES provider(id)
-            );''',
-
-            '''CREATE TABLE IF NOT EXISTS dataset (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL,
-                qid TEXT NOT NULL,
-                collection INT NOT NULL,
-                FOREIGN KEY (collection) REFERENCES collection(id)
-            );''',
-
-            '''CREATE TABLE IF NOT EXISTS document (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                dataset INT NOT NULL,
-                external_id TEXT NOT NULL,
-                FOREIGN KEY (dataset) REFERENCES dataset(id)
-            );''',
-
-            '''CREATE TABLE IF NOT EXISTS sentence (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                text TEXT NOT NULL,
-                uuid TEXT NOT NULL UNIQUE,
-                document INT NOT NULL,
-                language INT NOT NULL,
-                score FLOAT NOT NULL,
-                token_count INT NOT NULL,
-                FOREIGN KEY (document) REFERENCES document(id),
-                FOREIGN KEY (language) REFERENCES language(id)
-            );'''
-        ]
-        for query in sql_queries:
-            self.tuple_cursor.execute(query)
-
-    def create_indexes(self):
-        """These indexes enable us to fast lookup of sentences
-        in a given language, document or with a given UUID"""
-        logger.info("Creating indexes")
-        sql_index_queries = [
-            "CREATE INDEX IF NOT EXISTS idx_language_id ON language(id);",
-            "CREATE INDEX IF NOT EXISTS idx_provider_id ON provider(id);",
-            "CREATE INDEX IF NOT EXISTS idx_collection_id ON collection(id);",
-            "CREATE INDEX IF NOT EXISTS idx_dataset_id ON dataset(id);",
-            "CREATE INDEX IF NOT EXISTS idx_document_id ON document(id);",
-            "CREATE INDEX IF NOT EXISTS idx_sentence_id ON sentence(id);",
-            "CREATE INDEX IF NOT EXISTS idx_sentence_uuid ON sentence(uuid);",
-            "CREATE INDEX IF NOT EXISTS idx_sentence_document_id ON sentence(document);",
-            "CREATE INDEX IF NOT EXISTS idx_sentence_language ON sentence(language);",
-        ]
-        for query in sql_index_queries:
-            self.tuple_cursor.execute(query)
-
-    def commit_and_close_db(self) -> None:
-        # Don't forget to close the connection when done
-        self.connection.commit()
-        self.connection.close()
