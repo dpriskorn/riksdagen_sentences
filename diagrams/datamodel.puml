@@ -52,8 +52,7 @@ entity sentence {
     + text TEXT NOT NULL
     + uuid TEXT NOT NULL UNIQUE
     + document INT NOT NULL
-    + language INT NOT NULL
-    + score FLOAT NOT NULL
+    + langscore INT NOT NULL
 }
 
 '' linking table
@@ -77,10 +76,19 @@ entity rawtoken_lexeme_form_id_linking {
 
 '' raw tokens appear in sentences as output form the NLP and have a lexical category
 '' they have a composite primary key hardcoding them to a specific lexical category
+'' text + lexical_category_id + language = UNIQUE
 entity rawtoken {
-    + id INT PRIMARY UNIQUE
-    + lexical_category_id INT PRIMARY UNIQUE
-    + text TEXT
+    + id INT PRIMARY AUTOINCREMENT
+    + lexical_category INT
+    + text TEXT NOT NULL
+    + score INT NOT NULL
+    + language INT NOT NULL
+}
+
+'' This prevents duplication of scores in the database on every token and sentence
+entity score {
+    + id INTEGER PRIMARY AUTOINCREMENT
+    + score FLOAT NOT NULL UNIQUE
 }
 
 '' normalized tokens are derived from raw tokens and have no lexical category
@@ -88,7 +96,7 @@ entity rawtoken {
 '' e.g. the form Hus has the normalized token hus
 '' e.g. the form statsminister has the normalized token statsminister
 entity normtoken {
-    + id INT PRIMARY UNIQUE
+    + id INT PRIMARY AUTOINCREMENT
     + text TEXT
 }
 
@@ -107,10 +115,13 @@ sentence }-- document
 document }-- collection
 collection }-- dataset
 dataset }-- provider
+language }-- langscore
 
 ' one to one
-sentence -- language
+sentence -- langscore
 rawtoken -- lexical_category
+rawtoken -- langscore
+rawtoken -- language
 
 ' many to many
 rawtoken }--{ raw_norm_linking
