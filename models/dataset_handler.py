@@ -33,5 +33,7 @@ class DatasetHandler(BaseModel):
         ]
 
     def get_dataset_id(self):
-        self.database_handler.insert_dataset_in_database(dataset_handler=self)
         self.dataset_id = self.database_handler.get_dataset_id(dataset_handler=self)
+        if not self.dataset_id:
+            self.database_handler.insert_dataset_in_database(dataset_handler=self)
+            self.dataset_id = self.database_handler.get_dataset_id(dataset_handler=self)
