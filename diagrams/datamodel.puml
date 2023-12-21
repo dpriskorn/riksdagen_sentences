@@ -58,21 +58,21 @@ entity sentence {
 
 '' linking table
 entity rawtoken_sentence_linking {
-    + sentence_id INT PRIMARY
-    + rawtoken_id INT PRIMARY
+    + sentence INT PRIMARY
+    + rawtoken INT PRIMARY
 }
 
 '' lexeme form ids can be matched later on to forms
-entity lexeme_form_id {
-    + lexeme_id INT PRIMARY
-    + form_id INT PRIMARY
+entity lexeme_form {
+    + lexeme INT PRIMARY
+    + form INT PRIMARY
 }
 
 '' linking table
-entity rawtoken_lexeme_form_id_linking {
+entity rawtoken_lexeme_form_linking {
     + rawtoken INT PRIMARY
-    + lexeme_id INT PRIMARY
-    + form_id INT PRIMARY
+    + lexeme INT PRIMARY
+    + form INT PRIMARY
 }
 
 '' raw tokens appear in sentences as output form the NLP and have a lexical category
@@ -102,9 +102,9 @@ entity normtoken {
 }
 
 '' link table between forms and normalized tokens
-entity raw_norm_linking {
-    + rawtoken_id INT PRIMARY
-    + normtoken_id INT PRIMARY
+entity rawtoken_normtoken_linking {
+    + rawtoken INT PRIMARY
+    + normtoken INT PRIMARY
 }
 
 
@@ -116,13 +116,11 @@ sentence }-- document
 document }-- collection
 collection }-- dataset
 dataset }-- provider
-language }-- langscore
 
 ' one to one
 sentence -- score
 sentence -- language
 rawtoken -- lexical_category
-rawtoken -- langscore
 rawtoken -- language
 
 ' many to many
