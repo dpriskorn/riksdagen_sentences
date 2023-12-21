@@ -203,6 +203,7 @@ class DatabaseHandler(BaseModel):
 
             # Execute the query with the extracted values for each language
             self.tuple_cursor.execute(query, (language_name_en, iso_code, qid))
+        self.commit_to_database()
 
     def setup_lexical_categories(self):
         print("Inserting lexical categories from YAML")
@@ -211,6 +212,7 @@ class DatabaseHandler(BaseModel):
                 "INSERT OR IGNORE INTO lexical_category (qid, postag) VALUES (?, ?)",
                 (qid, postag),
             )
+        self.commit_to_database()
         # print("Categories inserted successfully!")
 
     def insert_dataset_in_database(self, dataset_handler: Any):
@@ -293,8 +295,9 @@ class DatabaseHandler(BaseModel):
         INSERT OR IGNORE INTO rawtoken (lexical_category_id, text)
         VALUES (?, ?);
         """
-        params = (token.pos_id, token.text)
+        params = (token.pos_id, token.rawtoken)
         self.tuple_cursor.execute(query, params)
+        self.commit_to_database()
         logger.info("rawtoken inserted")
 
     def get_rawtoken_id(self, token: Token):
