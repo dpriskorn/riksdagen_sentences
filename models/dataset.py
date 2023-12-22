@@ -4,22 +4,19 @@ import os
 from typing import Any
 
 from pydantic import BaseModel
-from tqdm import tqdm
 
-from models.crud.insert import Insert
 from models.crud.read import Read
-from models.riksdagen_document import RiksdagenDocument
+from models.document import Document
 
 logger = logging.getLogger(__name__)
 
 
 class Dataset(BaseModel):
+    # todo avoid hardcoding for riksdagen
     # collection_id: int = 0  # hardcoded for now
     id: int
     analyzer: Any = None
-    # todo decide whether to remove or support this
-    document_offset: int = 0
-    max_documents_to_extract_per_dataset: int = 2
+    max_documents_to_extract_per_dataset: int = 0
 
     @property
     def dataset_title(self):
@@ -39,11 +36,16 @@ class Dataset(BaseModel):
 
     # @property
     # def qid(self) -> str:
-    #     return config.supported_riksdagen_document_types[self.riksdagen_dataset_title][
+    #     return config.supported_document_types[self.riksdagen_dataset_title][
     #         "wikidata_qid"
     #     ]
 
-    def read_json_from_disk_and_extract(self):
+    def analyze(self):
+        self.__read_json_from_disk_and_extract()
+        self.print_number_of_skipped_documents()
+        self.print_number_of_tokens()
+
+    def __read_json_from_disk_and_extract(self):
         logger.info("reading json from disk")
         if not self.workdirectory:
             raise ValueError("workdirectory was empty string")
@@ -53,22 +55,20 @@ class Dataset(BaseModel):
                 if file.endswith(".json"):
                     file_paths.append(os.path.join(root, file))
 
-        logger.info(f"Number of filepaths found: {len(file_paths)}")
-
-        # Handle offset
-        file_paths = file_paths[self.document_offset :]
-        # print(file_paths[:1])
-        # exit()
-        logger.info(f"Number of filepaths after offset: {len(file_paths)}")
-
-        # Wrap the iteration with tqdm to display a progress bar
-        count = 0
-        for file_path in tqdm(file_paths, desc="Processing JSON files"):
+        # logger.info(f"Number of filepaths found: {len(file_paths)}")
+        # logger.info(f"Number of filepaths after offset: {len(file_paths)}")
+        count = 1
+        for file_path in file_paths:
             # Only break if max_documents_to_extract is different from 0
-            if self.max_documents_to_extract_per_dataset and count >= self.max_documents_to_extract_per_dataset:
+            if (
+                self.max_documents_to_extract_per_dataset
+                and count >= self.max_documents_to_extract_per_dataset
+            ):
                 print("Max documents limit reached.")
                 break
             with open(file_path, "r", encoding="utf-8-sig") as json_file:
+                # if count % 10 == 0 or count == 1:
+                print(f"Processing document {count}/{len(file_paths)}")
                 try:
                     data = json.load(json_file)
                     if (
@@ -83,17 +83,13 @@ class Dataset(BaseModel):
                             text is not None or html is not None
                         ):
                             # We got a good document with content
-                            document = RiksdagenDocument(
+                            document = Document(
                                 external_id=dok_id,
                                 dataset_id=self.id,
                                 text=text or "",
                                 html=html or "",
                             )
-                            insert = Insert()
-                            insert.connect_and_setup()
-                            insert.add_document_to_database(document=document)
-                            insert.close_db()
-                            document.extract_sentences()
+                            document.insert_extract_and_update()
                         else:
                             self.skipped_documents_count += 1
                             logger.info(

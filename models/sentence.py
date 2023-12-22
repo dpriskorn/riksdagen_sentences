@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class Sentence(BaseModel):
     sent: Any
     document: Any
-    tokens: List[Token] = list()
+    accepted_tokens: List[Token] = list()
     uuid: str = ""
     score: float = 0.0
     detected_language: str = ""
@@ -26,8 +26,8 @@ class Sentence(BaseModel):
         arbitrary_types_allowed = True
 
     @property
-    def sentence(self) -> str:
-        return str(self.sent)
+    def text(self) -> str:
+        return str(self.sent.text)
 
     @property
     def id(self) -> int:
@@ -104,24 +104,34 @@ class Sentence(BaseModel):
         self.iterate_tokens()
         if self.is_suitable_sentence:
             self.generate_uuid()
-            insert = Insert()
-            insert.connect_and_setup()
-            insert.insert_sentence(sentence=self)
-            insert.link_sentence_to_rawtokens(sentence=self)
-            insert.close_db()
+            read = Read()
+            read.connect_and_setup()
+            sentence_id = read.get_sentence_id(sentence=self)
+            read.close_db()
+            if not sentence_id:
+                insert = Insert()
+                insert.connect_and_setup()
+                insert.insert_sentence(sentence=self)
+                insert.link_sentence_to_rawtokens(sentence=self)
+                insert.close_db()
 
     def insert_score(self):
-        insert = Insert()
-        insert.connect_and_setup()
-        insert.insert_score(sentence=self)
-        insert.close_db()
+        read = Read()
+        read.connect_and_setup()
+        score = read.get_score(sentence=self)
+        read.close_db()
+        if not score:
+            insert = Insert()
+            insert.connect_and_setup()
+            insert.insert_score(sentence=self)
+            insert.close_db()
 
     def iterate_tokens(self):
         for token_ in self.sent:
             token = Token(token=token_, sentence=self)
             token.analyze_and_insert()
             if token.is_accepted_token:
-                self.tokens.append(token)
+                self.accepted_tokens.append(token)
 
     def clean_and_print_sentence(self):
         logger.info(
@@ -136,7 +146,7 @@ class Sentence(BaseModel):
     def detect_language(self) -> None:
         """Detect language using fasttext"""
         # This returns a dict like so: {'lang': 'tr', 'score': 0.9982126951217651}
-        result = detect(text=self.sentence.replace("\n", ""), low_memory=False)
+        result = detect(text=self.text.replace("\n", ""), low_memory=False)
         # We round the score because the extra decimals do not add anything of value
         self.score = round(result["score"], 2)
         self.detected_language = result["lang"]

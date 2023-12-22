@@ -76,10 +76,9 @@ class Insert(Mariadb):
         self.cursor.execute(query, (title, item_int, dataset_handler.collection_id))
         self.commit_to_database()
 
-    def add_document_to_database(self, document: Any):
+    def insert_document(self, document: Any):
         logger.info("Adding document to database")
-        # Assuming 'documents' is the name of the table where documents are stored
-        query = "INSERT IGNORE INTO document (external_id, dataset) VALUES (%s, %s)"
+        query = "INSERT INTO document (external_id, dataset) VALUES (%s, %s)"
         values = (document.external_id, document.dataset_id)
         self.cursor.execute(query, values)
         self.commit_to_database()
@@ -87,7 +86,7 @@ class Insert(Mariadb):
 
     def insert_rawtoken(self, token: Any):
         query = """
-        INSERT IGNORE INTO rawtoken 
+        INSERT INTO rawtoken 
         (lexical_category, text, language, score)
         VALUES (%s, %s, %s, %s);
         """
@@ -103,11 +102,11 @@ class Insert(Mariadb):
 
     def insert_sentence(self, sentence: Any):
         query = """
-        INSERT IGNORE INTO sentence (text, uuid, document, language, score)
+        INSERT INTO sentence (text, uuid, document, language, score)
         VALUES (%s, %s, %s, %s, %s);
         """
         params = (
-            sentence.sentence,
+            sentence.text,
             sentence.uuid,
             sentence.document.id,
             sentence.language_id,
@@ -119,7 +118,7 @@ class Insert(Mariadb):
 
     def insert_score(self, sentence: Any):
         query = """
-        INSERT IGNORE INTO score (value)
+        INSERT INTO score (value)
         VALUES (%s)
         """
         params = (sentence.score,)
@@ -128,7 +127,7 @@ class Insert(Mariadb):
         logger.info("score inserted")
 
     def link_sentence_to_rawtokens(self, sentence: Any):
-        for token in sentence.tokens:
+        for token in sentence.accepted_tokens:
             query = """
             INSERT IGNORE INTO rawtoken_sentence_linking (sentence, rawtoken)
             VALUES (%s, %s)
@@ -140,7 +139,7 @@ class Insert(Mariadb):
 
     def insert_normtoken(self, token: Any):
         query = """
-        INSERT IGNORE INTO normtoken 
+        INSERT INTO normtoken 
         (text)
         VALUES (%s);
         """

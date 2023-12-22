@@ -2,7 +2,7 @@ import logging
 from typing import Any, List
 
 from models.crud.database_handler import Mariadb
-from models.exceptions import PostagError
+from models.exceptions import PostagError, MissingLanguageError
 
 logger = logging.getLogger(__name__)
 
@@ -105,21 +105,28 @@ class Read(Mariadb):
         params = (sentence.score,)
         logger.debug(self.cursor.mogrify(query, params))
         self.cursor.execute(query, params)
-        score_id = self.cursor.fetchone()[0]
-        logger.info(f"Got score id: {score_id}")
-        return score_id
+        result = self.cursor.fetchone()
+        if result:
+            score_id = result[0]
+            logger.info(f"Got score id: {score_id}")
+            return score_id
 
     def get_language(self, sentence: Any) -> int:
+        code = sentence.detected_language.lower()
         query = """
             SELECT id
             FROM language
             WHERE iso_code = %s
         """
-        params = (sentence.detected_language.lower(),)
+        params = (code,)
         self.cursor.execute(query, params)
-        rowid = self.cursor.fetchone()[0]
-        logger.info(f"Got language id: {rowid}")
-        return rowid
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.info(f"Got language id: {rowid}")
+            return rowid
+        else:
+            raise MissingLanguageError(f"iso_code {code} for sentence {sentence.text}")
 
     def get_document_id(self, document: Any) -> int:
         query = """
@@ -129,9 +136,11 @@ class Read(Mariadb):
         """
         params = (document.external_id,)
         self.cursor.execute(query, params)
-        rowid = self.cursor.fetchone()[0]
-        logger.info(f"Got document id: {rowid}")
-        return rowid
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.info(f"Got document id: {rowid}")
+            return rowid
 
     def get_sentence_id(self, sentence: Any) -> int:
         query = """
@@ -140,14 +149,16 @@ class Read(Mariadb):
             WHERE text = %s and document = %s and language = %s
         """
         params = (
-            sentence.sentence,
+            sentence.text,
             sentence.document.id,
             sentence.language_id,
         )
         self.cursor.execute(query, params)
-        rowid = self.cursor.fetchone()[0]
-        logger.info(f"Got sentence id: {rowid}")
-        return rowid
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.info(f"Got sentence id: {rowid}")
+            return rowid
 
     def get_normtoken_id(self, token: Any):
         query = """SELECT id
@@ -155,9 +166,11 @@ class Read(Mariadb):
             WHERE text = %s 
         """
         self.cursor.execute(query, (token.normalized_token,))
-        rowid = self.cursor.fetchone()[0]
-        logger.info(f"Got normtoken id: {rowid}")
-        return rowid
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.info(f"Got normtoken id: {rowid}")
+            return rowid
 
     def get_rawtoken_id(self, token: Any):
         query = """SELECT id
@@ -165,6 +178,8 @@ class Read(Mariadb):
             WHERE text = %s and lexical_category = %s;
         """
         self.cursor.execute(query, (token.rawtoken, token.pos_id))
-        rowid = self.cursor.fetchone()[0]
-        logger.info(f"Got rawtoken id: {rowid}")
-        return rowid
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.info(f"Got rawtoken id: {rowid}")
+            return rowid

@@ -8,24 +8,24 @@ from pydantic import BaseModel
 from models.crud.create import Create
 from models.crud.database_handler import Mariadb
 from models.datasets import Datasets
-from models.riksdagen_document import RiksdagenDocument
+from models.document import Document
 
 logger = logging.getLogger(__name__)
 
 
-class RiksdagenAnalyzer(BaseModel):
+class Analyzer(BaseModel):
     """This model extracts sentences from a supported riksdagen document type
     and stores the result in a jsonl format."""
 
-    documents: List[RiksdagenDocument] = []
+    documents: List[Document] = []
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = 0  # zero means no limit
-    max_datasets_to_extract: int = 0   # zero means no limit
+    max_datasets_to_extract: int = 0  # zero means no limit
     skipped_documents_count: int = 0
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     arguments: argparse.Namespace = argparse.Namespace()
     mariadb: Mariadb = Mariadb()
-    datasets: Datasets = Datasets()
+    datasets: Datasets = None
 
     class Config:
         arbitrary_types_allowed = True
@@ -33,19 +33,7 @@ class RiksdagenAnalyzer(BaseModel):
     def start(self):
         self.setup_database()
         self.setup_datasets()
-        self.iterate_datasets()
-
-    def iterate_datasets(self):
-        count = 0
-        for dataset in self.datasets.datasets:
-            if 0 < self.max_datasets_to_extract <= count:
-                print("Max number of datasets reached")
-            else:
-                dataset.max_documents_to_extract_per_dataset = self.max_documents_to_extract
-                dataset.read_json_from_disk_and_extract()
-                dataset.print_number_of_skipped_documents()
-                dataset.print_number_of_tokens()
-                count += 1
+        self.datasets.iterate_datasets()
 
     @staticmethod
     def setup_database():
@@ -54,7 +42,11 @@ class RiksdagenAnalyzer(BaseModel):
         create.close_db()
 
     def setup_datasets(self):
-        self.datasets = Datasets(analyzer=self)
+        self.datasets = Datasets(
+            analyzer=self,
+            max_documents_to_extract=self.max_documents_to_extract,
+            max_datasets_to_extract=self.max_datasets_to_extract,
+        )
         self.datasets.setup()
 
     def handle_arguments(self):
@@ -77,8 +69,14 @@ class RiksdagenAnalyzer(BaseModel):
             description="Analyze all open data from Riksdagen"
         )
         self.parser.add_argument(
-            "--max-documents", type=int, help="Max number of documents to process per dataset", required=False
+            "--max-documents",
+            type=int,
+            help="Max number of documents to process per dataset",
+            required=False,
         )
         self.parser.add_argument(
-            "--max-datasets", type=int, help="Max number of datasets to process", required=False
+            "--max-datasets",
+            type=int,
+            help="Max number of datasets to process",
+            required=False,
         )

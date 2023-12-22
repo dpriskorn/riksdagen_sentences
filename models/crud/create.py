@@ -52,6 +52,7 @@ class Create(Mariadb):
                 id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 dataset SMALLINT UNSIGNED NOT NULL,
                 external_id VARCHAR(255) NOT NULL,
+                processed BOOL DEFAULT FALSE,
                 FOREIGN KEY (dataset) REFERENCES dataset(id),
                 UNIQUE(dataset, external_id)
             );
@@ -67,7 +68,7 @@ class Create(Mariadb):
                 document SMALLINT UNSIGNED NOT NULL,
                 score SMALLINT UNSIGNED NOT NULL,
                 language SMALLINT UNSIGNED NOT NULL,
-                # UNIQUE (text, document),
+                UNIQUE (text, document),
                 FOREIGN KEY (document) REFERENCES document(id),
                 FOREIGN KEY(language) REFERENCES language(id),
                 FOREIGN KEY(score) REFERENCES score(id)

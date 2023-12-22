@@ -19,10 +19,17 @@ class Token(BaseModel):
             logger.info(spacy.explain(self.pos))
             logger.info(f"rawtoken: '{self.rawtoken}'")
             logger.info(f"normtoken: '{self.normalized_token}'")
+            read = Read()
+            read.connect_and_setup()
+            rawtoken_id = read.get_rawtoken_id(token=self)
             insert = Insert()
             insert.connect_and_setup()
-            insert.insert_rawtoken(token=self)
-            insert.insert_normtoken(token=self)
+            if not rawtoken_id:
+                insert.insert_rawtoken(token=self)
+            normtoken_id = read.get_normtoken_id(token=self)
+            read.close_db()
+            if not normtoken_id:
+                insert.insert_normtoken(token=self)
             insert.link_normtoken_to_rawtoken(token=self)
             insert.close_db()
         else:
