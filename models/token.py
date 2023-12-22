@@ -16,9 +16,9 @@ class Token(BaseModel):
 
     def analyze_and_insert(self):
         if self.is_accepted_token:
-            print(spacy.explain(self.pos))
-            print(f"rawtoken: '{self.rawtoken}'")
-            print(f"normtoken: '{self.normalized_token}'")
+            logger.info(spacy.explain(self.pos))
+            logger.info(f"rawtoken: '{self.rawtoken}'")
+            logger.info(f"normtoken: '{self.normalized_token}'")
             insert = Insert()
             insert.connect_and_setup()
             insert.insert_rawtoken(token=self)
@@ -26,7 +26,7 @@ class Token(BaseModel):
             insert.link_normtoken_to_rawtoken(token=self)
             insert.close_db()
         else:
-            print(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
+            logger.info(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
 
     @property
     def id(self) -> int:

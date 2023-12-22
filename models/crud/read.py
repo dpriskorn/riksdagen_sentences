@@ -50,7 +50,7 @@ class Read(Mariadb):
         print(done_query)
         self.cursor.execute(query, (item_int,))
         result = self.cursor.fetchone()
-        print(result)
+        logger.debug(result)
         if result:
             dataset_id = [0]
             print(f"Got dataset id: {dataset_id}")
@@ -93,7 +93,7 @@ class Read(Mariadb):
             raise PostagError(f"postag {token.pos} not found in database")
         else:
             rowid = result[0]
-        print(f"Got lexical category rowid: {rowid}")
+        logger.info(f"Got lexical category rowid: {rowid}")
         return rowid
 
     def get_score(self, sentence: Any) -> int:

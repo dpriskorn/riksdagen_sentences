@@ -19,7 +19,7 @@ class Insert(Mariadb):
         self.insert_lexical_categories()
 
     def insert_languages(self):
-        print("Inserting languages from YAML")
+        logger.info("Inserting languages from YAML")
         # Construct the SQL INSERT query
         query = """
                 INSERT IGNORE INTO language (name_en, iso_code, qid)
@@ -37,7 +37,7 @@ class Insert(Mariadb):
         self.commit_to_database()
 
     def insert_datasets_in_database(self, datasets):
-        print("Inserting datasets from YAML")
+        logger.info("Inserting datasets from YAML")
         query = """
                 INSERT IGNORE INTO dataset (title, qid, workdirectory)
                 VALUES (%s, %s, %s)
@@ -54,7 +54,7 @@ class Insert(Mariadb):
         self.commit_to_database()
 
     def insert_lexical_categories(self):
-        print("Inserting lexical categories from YAML")
+        logger.info("Inserting lexical categories from YAML")
         for postag, qid in self.lexical_categories.items():
             self.cursor.execute(
                 "INSERT IGNORE INTO lexical_category (qid, postag) VALUES (%s, %s)",
@@ -64,7 +64,7 @@ class Insert(Mariadb):
         # print("Categories inserted successfully!")
 
     def insert_dataset_in_database(self, dataset_handler: Any):
-        print("Setting up dataset entry")
+        logger.info("Setting up dataset entry")
         item_int = self.item_int(dataset_handler.dataset_wikidata_qid)
         query = """
         INSERT INTO dataset (title, qid, collection)
@@ -77,13 +77,13 @@ class Insert(Mariadb):
         self.commit_to_database()
 
     def add_document_to_database(self, document: Any):
-        print("Adding document to database")
+        logger.info("Adding document to database")
         # Assuming 'documents' is the name of the table where documents are stored
         query = "INSERT IGNORE INTO document (external_id, dataset) VALUES (%s, %s)"
         values = (document.external_id, document.dataset_id)
         self.cursor.execute(query, values)
         self.commit_to_database()
-        print("Document added to the database.")
+        logger.info("Document added to the database.")
 
     def insert_rawtoken(self, token: Any):
         query = """
