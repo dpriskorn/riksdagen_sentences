@@ -4,6 +4,9 @@ import re
 import spacy
 from pydantic import BaseModel
 
+from models.crud.insert import Insert
+from models.crud.read import Read
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,26 +19,41 @@ class Token(BaseModel):
             print(spacy.explain(self.pos))
             print(f"rawtoken: '{self.rawtoken}'")
             print(f"normtoken: '{self.normalized_token}'")
-            self.sentence.database_handler.insert_rawtoken(token=self)
-            self.sentence.database_handler.insert_normtoken(token=self)
-            self.sentence.database_handler.link_normtoken_to_rawtoken(token=self)
+            insert = Insert()
+            insert.connect_and_setup()
+            insert.insert_rawtoken(token=self)
+            insert.insert_normtoken(token=self)
+            insert.link_normtoken_to_rawtoken(token=self)
+            insert.close_db()
         else:
             print(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
 
     @property
     def id(self) -> int:
         """ID of this rawtoken in the database"""
-        return self.sentence.database_handler.get_rawtoken_id(token=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_rawtoken_id(token=self)
+        read.close_db()
+        return data
 
     @property
     def normtoken_id(self) -> int:
         """ID of the corresponding normtoken for this token in the database"""
-        return self.sentence.database_handler.get_normtoken_id(token=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_normtoken_id(token=self)
+        read.close_db()
+        return data
 
     @property
     def pos_id(self) -> int:
         """ID of the postag of this token in the database"""
-        return self.sentence.database_handler.get_lexical_category_id(token=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_lexical_category_id(token=self)
+        read.close_db()
+        return data
 
     @property
     def pos(self) -> str:

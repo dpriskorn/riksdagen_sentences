@@ -2,11 +2,13 @@ import logging
 import re
 import string
 import uuid
-from typing import Any, List, Dict
-from ftlangdetect import detect
+from typing import Any, List
 
+from ftlangdetect import detect
 from pydantic import BaseModel
 
+from models.crud.insert import Insert
+from models.crud.read import Read
 from models.token import Token
 
 logger = logging.getLogger(__name__)
@@ -14,7 +16,6 @@ logger = logging.getLogger(__name__)
 
 class Sentence(BaseModel):
     sent: Any
-    database_handler: Any
     document: Any
     tokens: List[Token] = list()
     uuid: str = ""
@@ -31,17 +32,29 @@ class Sentence(BaseModel):
     @property
     def id(self) -> int:
         """ID of this rawtoken in the database"""
-        return self.database_handler.get_sentence_id(sentence=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_sentence_id(sentence=self)
+        read.close_db()
+        return data
 
     @property
     def score_id(self) -> int:
         """ID of this score in the database"""
-        return self.database_handler.get_score(sentence=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_score(sentence=self)
+        read.close_db()
+        return data
 
     @property
     def language_id(self) -> int:
         """ID of this language in the database"""
-        return self.database_handler.get_language(sentence=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_language(sentence=self)
+        read.close_db()
+        return data
 
     @property
     def is_suitable_sentence(self) -> bool:
@@ -87,13 +100,21 @@ class Sentence(BaseModel):
         # We insert and store valuable tokens even if the
         # sentence is not deemed suitable for our purposes
         self.detect_language()
-        self.database_handler.insert_score(sentence=self)
+        self.insert_score()
         self.iterate_tokens()
         if self.is_suitable_sentence:
             self.generate_uuid()
-            self.database_handler.insert_sentence(sentence=self)
-            self.database_handler.link_sentence_to_rawtokens(sentence=self)
-            # todo iterate self.tokens and link between this sentence and their id
+            insert = Insert()
+            insert.connect_and_setup()
+            insert.insert_sentence(sentence=self)
+            insert.link_sentence_to_rawtokens(sentence=self)
+            insert.close_db()
+
+    def insert_score(self):
+        insert = Insert()
+        insert.connect_and_setup()
+        insert.insert_score(sentence=self)
+        insert.close_db()
 
     def iterate_tokens(self):
         for token_ in self.sent:

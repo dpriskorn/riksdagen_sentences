@@ -1,14 +1,11 @@
 import logging
-import re
-import sqlite3
-from sqlite3 import Cursor, DatabaseError
 from typing import List, Any
 
 import spacy
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
-from models.database_handler import DatabaseHandler
+from models.crud.read import Read
 from models.sentence import Sentence
 
 logger = logging.getLogger(__name__)
@@ -28,11 +25,7 @@ class RiksdagenDocument(BaseModel):
     chunk_size: int = 100000
     chunks: List[str] = list()
     sentences: List[Sentence] = list()
-    connection: Any = None
-    tuple_cursor: Cursor = None
-    row_cursor: Cursor = None
     nlp: Any = None
-    database_handler: DatabaseHandler
 
     class Config:
         arbitrary_types_allowed = True
@@ -40,7 +33,11 @@ class RiksdagenDocument(BaseModel):
     @property
     def id(self) -> int:
         """ID of this document in the database"""
-        return self.database_handler.get_document_id(document=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_document_id(document=self)
+        read.close_db()
+        return data
 
     @property
     def token_count(self) -> int:
@@ -109,7 +106,5 @@ class RiksdagenDocument(BaseModel):
 
     def iterate_sentences(self, doc: Any):
         for sent in doc.sents:
-            sentence = Sentence(
-                sent=sent, database_handler=self.database_handler, document=self
-            )
+            sentence = Sentence(sent=sent, document=self)
             sentence.analyze_and_insert()
