@@ -48,7 +48,7 @@ class Insert(Mariadb):
             qid = data["qid"]
             workdirectory = data["workdirectory"]
             qid_int = self.item_int(qid)
-            params = (title, qid, workdirectory)
+            params = (title, qid_int, workdirectory)
             logger.debug(self.cursor.mogrify(query, params))
             self.cursor.execute(query, params)
         self.commit_to_database()
