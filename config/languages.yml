@@ -9,6 +9,10 @@
 #    edge cases where there is no agreed-upon ISO 639-1 code for a language, e.g. Punjabi.
 
 development: &default
+  'nl':
+    language_qid: 'Q7411'
+    language_name_en: 'Dutch'
+    language_autonym: ''
   'de':
     language_qid: 'Q188'
     language_name_en: 'German'
