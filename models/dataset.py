@@ -20,7 +20,7 @@ class Dataset(BaseModel):
     analyzer: Any = None
     # todo decide whether to remove or support this
     document_offset: int = 0
-    max_documents_to_extract: int = 2
+    max_documents_to_extract_per_dataset: int = 2
 
     @property
     def dataset_title(self):
@@ -38,11 +38,11 @@ class Dataset(BaseModel):
         read.close_db()
         return data
 
-    @property
-    def qid(self) -> str:
-        return config.supported_riksdagen_document_types[self.riksdagen_dataset_title][
-            "wikidata_qid"
-        ]
+    # @property
+    # def qid(self) -> str:
+    #     return config.supported_riksdagen_document_types[self.riksdagen_dataset_title][
+    #         "wikidata_qid"
+    #     ]
 
     def read_json_from_disk_and_extract(self):
         logger.info("reading json from disk")
@@ -66,8 +66,8 @@ class Dataset(BaseModel):
         count = 0
         for file_path in tqdm(file_paths, desc="Processing JSON files"):
             # Only break if max_documents_to_extract is different from 0
-            if self.max_documents_to_extract and count >= self.max_documents_to_extract:
-                logger.info("Max documents limit reached.")
+            if self.max_documents_to_extract_per_dataset and count >= self.max_documents_to_extract_per_dataset:
+                print("Max documents limit reached.")
                 break
             with open(file_path, "r", encoding="utf-8-sig") as json_file:
                 try:

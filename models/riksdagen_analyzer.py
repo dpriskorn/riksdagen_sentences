@@ -1,16 +1,12 @@
 import argparse
-import json
 import logging
-import os
 from typing import List
 
 from pandas import DataFrame
 from pydantic import BaseModel
-from tqdm import tqdm
 
 from models.crud.create import Create
 from models.crud.database_handler import Mariadb
-from models.crud.read import Read
 from models.datasets import Datasets
 from models.riksdagen_document import RiksdagenDocument
 
@@ -25,8 +21,9 @@ class RiksdagenAnalyzer(BaseModel):
     documents: List[RiksdagenDocument] = []
     df: DataFrame = DataFrame()
     max_documents_to_extract: int = 0  # zero means no limit
+    max_datasets_to_extract: int = 0   # zero means no limit
     skipped_documents_count: int = 0
-    document_offset: int = 0
+    # document_offset: int = 0
     token_count: int = 0
     parser: argparse.ArgumentParser = argparse.ArgumentParser()
     jsonl_path_to_load: str = ""
@@ -43,10 +40,17 @@ class RiksdagenAnalyzer(BaseModel):
         self.iterate_datasets()
 
     def iterate_datasets(self):
+        count = 0
         for dataset in self.datasets.datasets:
-            dataset.read_json_from_disk_and_extract()
-            dataset.print_number_of_skipped_documents()
-            dataset.print_number_of_tokens()
+            if self.max_datasets_to_extract and count <= self.max_datasets_to_extract:
+                dataset.max_documents_to_extract_per_dataset = self.max_documents_to_extract
+                # dataset.document_offset = self.document_offset
+                dataset.read_json_from_disk_and_extract()
+                dataset.print_number_of_skipped_documents()
+                dataset.print_number_of_tokens()
+                count += 1
+            else:
+                print("Max number of datasets reached")
 
     def setup_database(self):
         create = Create()
@@ -60,13 +64,11 @@ class RiksdagenAnalyzer(BaseModel):
     def handle_arguments(self):
         self.setup_argparse()
         self.arguments = self.parser.parse_args()
-        if self.arguments.max:
-            self.max_documents_to_extract = self.arguments.max
-        if self.arguments.offset:
-            self.document_offset = self.arguments.offset
-        if self.arguments.analyze:
-            self.riksdagen_dataset_title = self.arguments.analyze
-            self.start()
+        if self.arguments.max_documents:
+            self.max_documents_to_extract = self.arguments.max_documents
+        if self.arguments.max_datasets:
+            self.max_datasets_to_extract = self.arguments.max_datasets
+        self.start()
 
     def print_number_of_skipped_documents(self):
         print(
@@ -76,20 +78,11 @@ class RiksdagenAnalyzer(BaseModel):
 
     def setup_argparse(self):
         self.parser = argparse.ArgumentParser(
-            description="Parse open data from Riksdagen"
-        )
-        # self.parser.add_argument(
-        #     "-l", "--load-jsonl", type=str, help="Load JSONL file", required=False
-        # )
-        self.parser.add_argument(
-            "--offset", type=int, help="Document offset", required=False
+            description="Analyze all open data from Riksdagen"
         )
         self.parser.add_argument(
-            "--max", type=int, help="Max documents to process", required=False
+            "--max-documents", type=int, help="Max number of documents to process per dataset", required=False
         )
         self.parser.add_argument(
-            "--analyze",
-            type=str,
-            help="Analyze a document series and save to a SQLite database. One of ['departementserien', 'proposition']",
-            required=True,
+            "--max-datasets", type=int, help="Max number of datasets to process", required=False
         )
