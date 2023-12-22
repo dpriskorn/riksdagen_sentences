@@ -6,7 +6,6 @@ from typing import Any
 from pydantic import BaseModel
 from tqdm import tqdm
 
-import config
 from models.crud.insert import Insert
 from models.crud.read import Read
 from models.riksdagen_document import RiksdagenDocument
@@ -108,10 +107,10 @@ class Dataset(BaseModel):
                     logger.error(f"Error loading JSON from {file_path}: {e}")
                 count = +1
 
-    def print_number_of_documents(self):
-        # Print or use the variable containing all text
-        print(f"number of documents: {len(self.documents)}")
-
-    def print_number_of_tokens(self):
-        # Print or use the variable containing all text
-        print(f"Total number of tokens: {self.token_count}")
+    # def print_number_of_documents(self):
+    #     # Print or use the variable containing all text
+    #     print(f"number of documents: {len(self.documents)}")
+    #
+    # def print_number_of_tokens(self):
+    #     # Print or use the variable containing all text
+    #     print(f"Total number of tokens: {self.token_count}")
