@@ -1,8 +1,12 @@
 import logging
-from typing import Any
 import re
-import spacy
+from typing import Any
+
 from pydantic import BaseModel
+
+import config
+from models.crud.insert import Insert
+from models.crud.read import Read
 
 logger = logging.getLogger(__name__)
 
@@ -13,29 +17,51 @@ class Token(BaseModel):
 
     def analyze_and_insert(self):
         if self.is_accepted_token:
-            print(spacy.explain(self.pos))
-            print(f"rawtoken: '{self.rawtoken}'")
-            print(f"normtoken: '{self.normalized_token}'")
-            self.sentence.database_handler.insert_rawtoken(token=self)
-            self.sentence.database_handler.insert_normtoken(token=self)
-            self.sentence.database_handler.link_normtoken_to_rawtoken(token=self)
+            # logger.debug(spacy.explain(self.pos))
+            logger.debug(f"rawtoken: '{self.rawtoken}'")
+            logger.debug(f"normtoken: '{self.normalized_token}'")
+            read = Read()
+            read.connect_and_setup()
+            rawtoken_id = read.get_rawtoken_id(token=self)
+            insert = Insert()
+            insert.connect_and_setup()
+            if not rawtoken_id:
+                insert.insert_rawtoken(token=self)
+            normtoken_id = read.get_normtoken_id(token=self)
+            read.close_db()
+            if not normtoken_id:
+                insert.insert_normtoken(token=self)
+            insert.link_normtoken_to_rawtoken(token=self)
+            insert.close_db()
         else:
-            print(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
+            logger.debug(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
 
     @property
     def id(self) -> int:
         """ID of this rawtoken in the database"""
-        return self.sentence.database_handler.get_rawtoken_id(token=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_rawtoken_id(token=self)
+        read.close_db()
+        return data
 
     @property
     def normtoken_id(self) -> int:
         """ID of the corresponding normtoken for this token in the database"""
-        return self.sentence.database_handler.get_normtoken_id(token=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_normtoken_id(token=self)
+        read.close_db()
+        return data
 
     @property
     def pos_id(self) -> int:
         """ID of the postag of this token in the database"""
-        return self.sentence.database_handler.get_lexical_category_id(token=self)
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_lexical_category_id(token=self)
+        read.close_db()
+        return data
 
     @property
     def pos(self) -> str:
@@ -54,11 +80,15 @@ class Token(BaseModel):
     def is_accepted_token(self) -> bool:
         """We accept a token which is has no
         numeric characters and is not a symbol and
-        not punctuation"""
+        not punctuation and has a detected language we accept"""
         unaccepted_postags = ["SPACE", "PUNCT", "SYM", "X"]
         if self.cleaned_token:
             has_numeric = any(char.isnumeric() for char in self.rawtoken)
-            if self.token.pos_ not in unaccepted_postags and not has_numeric:
+            if (
+                self.token.pos_ not in unaccepted_postags
+                and not has_numeric
+                and self.sentence.detected_language in config.accepted_languages
+            ):
                 return True
         return False
 

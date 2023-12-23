@@ -1,11 +1,11 @@
 import logging
 
 import config
-from models.riksdagen_analyzer import RiksdagenAnalyzer
+from models.analyzer import Analyzer
 
 logging.basicConfig(level=config.loglevel)
 
 
 if __name__ == "__main__":
-    analyzer = RiksdagenAnalyzer()
+    analyzer = Analyzer()
     analyzer.handle_arguments()

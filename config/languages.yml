@@ -9,6 +9,34 @@
 #    edge cases where there is no agreed-upon ISO 639-1 code for a language, e.g. Punjabi.
 
 development: &default
+  'jv':
+    language_qid: "Q33549"
+    language_name_en: "Javanese"
+  'nn':
+    language_qid: "Q25164"
+    language_name_en: "Norwegian Nynorsk"
+  'sh':
+    language_qid: "Q9301"
+    language_name_en: "Serbo-Croatian"
+  'is':
+    language_qid: "Q294"
+    language_name_en: "Islandic"
+  'ko':
+    language_qid: "Q9176"
+    language_name_en: "Korean"
+  'sl':
+    language_qid: "Q9063"
+    language_name_en: "Slovenian"
+  'ms':
+    language_qid: "Q9237"
+    language_name_en: "Malay"
+  'nds':
+    language_qid: 'Q25433'
+    language_name_en: 'Low German'
+  'nl':
+    language_qid: 'Q7411'
+    language_name_en: 'Dutch'
+    language_autonym: ''
   'de':
     language_qid: 'Q188'
     language_name_en: 'German'
