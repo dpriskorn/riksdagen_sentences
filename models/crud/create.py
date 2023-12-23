@@ -68,7 +68,7 @@ class Create(Mariadb):
                 document SMALLINT UNSIGNED NOT NULL,
                 score SMALLINT UNSIGNED NOT NULL,
                 language SMALLINT UNSIGNED NOT NULL,
-                UNIQUE (text, document),
+                UNIQUE (text, document, language),
                 FOREIGN KEY (document) REFERENCES document(id),
                 FOREIGN KEY(language) REFERENCES language(id),
                 FOREIGN KEY(score) REFERENCES score(id)
