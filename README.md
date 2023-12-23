@@ -33,6 +33,12 @@ consistently and reliably.
 linkable at this stage, but the release is and line numbers 
 or UUIDs can be used to link with no ambiguity)
 
+## Scope
+This way of chopping up open data can be applied to any open data, provided that it is in a machine readable form like TEXT or HTML.
+
+Riksdagen has about 600k documents that can be downloaded as open data.
+The size of the resulting database has been estimated to >1TB when the analysis is complete.
+
 ## Installation
 Clone the repo
 
@@ -59,7 +65,7 @@ Alice Zhao https://www.youtube.com/watch?v=8Fw1nh8lR54
 GPLv3+
 
 ## What I learned
-* pandas is super nice and fast
+* pandas is super nice and fast, but no so suitable for this job
 * the default sentenizer for Swedish in spaCy is not ideal
 * chatgpt can write good code, but it still outputs wonky code sometimes
 * through chatgpt I used the progress library tqdm 
