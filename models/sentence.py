@@ -117,7 +117,10 @@ class Sentence(BaseModel):
             # We don't trust scores below this threshold
             # They are often occur when only one or two tokens
             # are left after cleaning
-            if self.score >= 0.4:
+            # Also don't add sentences with these unlikely languages as
+            # they are just hallucinations by the model
+            not_accepted_languages = ['ko', 'ceb', 'jv', 'sh', 'is', 'ms', 'nds', 'nl']
+            if self.score >= 0.4 and self.detected_language not in not_accepted_languages:
                 sentence_id = self.id
                 if not sentence_id:
                     if self.is_suitable_sentence:
@@ -133,7 +136,8 @@ class Sentence(BaseModel):
                     logger.info("Skipping sentence we already have analyzed")
             else:
                 logger.warning(
-                    "Skipping sentence with language detection score below 0.4:\n"
+                    "Skipping sentence with language detection score below 0.4 "
+                    "or a language code which is highly unlikely:\n"
                     f"lang: {self.detected_language}\n"
                     f"sentence: {self.cleaned_sentence}"
                 )
@@ -171,6 +175,7 @@ class Sentence(BaseModel):
         # This returns a dict like so: {'lang': 'tr', 'score': 0.9982126951217651}
         # We clean the sentence before language detection to avoid garbage results
         cleaned_sentence = self.cleaned_sentence
+        # TODO implement swedish lexeme based detection if < 4 words
         if cleaned_sentence:
             result = detect(text=cleaned_sentence, low_memory=False)
             # if result["score"] < 0.4:
