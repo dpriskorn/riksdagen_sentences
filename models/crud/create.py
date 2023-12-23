@@ -1,6 +1,7 @@
 import logging
 
 from models.crud.database_handler import Mariadb
+from models.crud.insert import Insert
 
 logger = logging.getLogger(__name__)
 
@@ -11,7 +12,19 @@ class Create(Mariadb):
         self.initialize_mariadb_cursor()
         self.create_tables()
         self.create_indexes()
+        self.insert_languages_and_lexical_categories_from_config()
         self.commit_to_database()
+
+    @staticmethod
+    def insert_languages_and_lexical_categories_from_config():
+        insert = Insert()
+        insert.connect_and_setup()
+        # todo move this to own classes
+        insert.load_languages_from_yaml()
+        insert.load_lexical_categories_from_yaml()
+        insert.insert_languages()
+        insert.insert_lexical_categories()
+        insert.close_db()
 
     def create_tables(self):
         logger.info("Creating tables")

@@ -27,7 +27,8 @@ class Mariadb(BaseModel):
         return int(qid[1:])
 
     def connect_and_setup(self):
-        pass
+        self.connect_to_mariadb()
+        self.initialize_mariadb_cursor()
 
     def connect_to_mariadb(self):
         """Connect to a local database"""
@@ -42,7 +43,7 @@ class Mariadb(BaseModel):
             self.connection = pymysql.connect(
                 host=host, user=user, passwd=password, db=database
             )
-            logger.info("succesfully connected to mariadb")
+            logger.debug("succesfully connected to mariadb")
 
         except pymysql.Error as e:
             print("Error: %s" % e)

@@ -24,7 +24,7 @@ class Document(BaseModel):
     dataset_id: int
     text: str = ""
     html: str = ""
-    chunk_size: int = 100000
+    chunk_size: int = 50000
     chunks: List[str] = list()
     accepted_sentences: List[Sentence] = list()
     nlp: Any = None
@@ -38,6 +38,13 @@ class Document(BaseModel):
         read = Read()
         read.connect_and_setup()
         data = read.get_document_id(document=self)
+        read.close_db()
+        return data
+
+    def already_processed(self) -> bool:
+        read = Read()
+        read.connect_and_setup()
+        data = read.get_processed_status(document=self)
         read.close_db()
         return data
 
@@ -74,6 +81,7 @@ class Document(BaseModel):
             start += self.chunk_size
 
     def convert_html_to_text(self):
+        # todo remove tables before conversion
         # Check if HTML content exists for the document
         soup = BeautifulSoup(self.html, "lxml")
         # Extract text from the HTML
@@ -85,18 +93,22 @@ class Document(BaseModel):
     #     logger.info(f"Number of chunks: " f"{self.number_of_chunks}")
 
     def extract_sentences(self):
-        if not self.text:
-            # We assume html is present
-            self.convert_html_to_text()
-        if self.text:
-            print(
-                f"Extracting document {self.external_id} with {self.count_words} words"
-            )
-            # Load the Swedish language model
-            self.nlp = spacy.load("sv_core_news_lg")
-            self.chunk_text()
-            # self.print_number_of_chunks()
-            self.iterate_chunks()
+        if not self.already_processed():
+            if not self.text:
+                # We assume html is present
+                self.convert_html_to_text()
+            if self.text:
+                print(
+                    f"Extracting document {self.external_id} with {self.count_words} words"
+                )
+                # Load the Swedish language model
+                self.nlp = spacy.load("sv_core_news_lg")
+                self.chunk_text()
+                # todo insert chunk md5 in the database
+                # self.print_number_of_chunks()
+                self.iterate_chunks()
+        else:
+            logger.info(f"Skipping already processed document {self.external_id}")
 
     # def print_number_of_sentences(self):
     #     logger.info(f"Extracted {len(self.accepted_sentences)} sentences")
@@ -105,6 +117,7 @@ class Document(BaseModel):
         count = 1
         for chunk in self.chunks:
             print(f"Iterating chunk {count}/" f"{self.number_of_chunks}")
+            # todo check if chunk md5 has been processed
             doc = self.nlp(chunk)
             self.iterate_sentences(doc=doc)
             count += 1

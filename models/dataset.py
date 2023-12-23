@@ -92,16 +92,16 @@ class Dataset(BaseModel):
                             document.insert_extract_and_update()
                         else:
                             self.skipped_documents_count += 1
-                            logger.info(
+                            logger.debug(
                                 f"Skipping document {json_file}: Missing dok_id and (text or html)"
                             )
                     else:
-                        logger.info(
+                        logger.debug(
                             f"Skipping document {json_file}: Missing 'dokumentstatus' or 'dokument'"
                         )
                 except json.JSONDecodeError as e:
                     logger.error(f"Error loading JSON from {file_path}: {e}")
-                count = +1
+            count += 1
 
     # def print_number_of_documents(self):
     #     # Print or use the variable containing all text

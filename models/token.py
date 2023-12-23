@@ -1,9 +1,10 @@
 import logging
-from typing import Any
 import re
-import spacy
+from typing import Any
+
 from pydantic import BaseModel
 
+import config
 from models.crud.insert import Insert
 from models.crud.read import Read
 
@@ -16,9 +17,9 @@ class Token(BaseModel):
 
     def analyze_and_insert(self):
         if self.is_accepted_token:
-            logger.info(spacy.explain(self.pos))
-            logger.info(f"rawtoken: '{self.rawtoken}'")
-            logger.info(f"normtoken: '{self.normalized_token}'")
+            # logger.debug(spacy.explain(self.pos))
+            logger.debug(f"rawtoken: '{self.rawtoken}'")
+            logger.debug(f"normtoken: '{self.normalized_token}'")
             read = Read()
             read.connect_and_setup()
             rawtoken_id = read.get_rawtoken_id(token=self)
@@ -33,7 +34,7 @@ class Token(BaseModel):
             insert.link_normtoken_to_rawtoken(token=self)
             insert.close_db()
         else:
-            logger.info(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
+            logger.debug(f"discarded: text: '{self.rawtoken}', pos: {self.pos}")
 
     @property
     def id(self) -> int:
@@ -79,11 +80,15 @@ class Token(BaseModel):
     def is_accepted_token(self) -> bool:
         """We accept a token which is has no
         numeric characters and is not a symbol and
-        not punctuation"""
+        not punctuation and has a detected language we accept"""
         unaccepted_postags = ["SPACE", "PUNCT", "SYM", "X"]
         if self.cleaned_token:
             has_numeric = any(char.isnumeric() for char in self.rawtoken)
-            if self.token.pos_ not in unaccepted_postags and not has_numeric:
+            if (
+                self.token.pos_ not in unaccepted_postags
+                and not has_numeric
+                and self.sentence.detected_language in config.accepted_languages
+            ):
                 return True
         return False
 

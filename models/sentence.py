@@ -1,5 +1,4 @@
 import logging
-import re
 import string
 import uuid
 from typing import Any, List
@@ -7,6 +6,7 @@ from typing import Any, List
 from ftlangdetect import detect
 from pydantic import BaseModel
 
+import config
 from models.crud.insert import Insert
 from models.crud.read import Read
 from models.token import Token
@@ -58,20 +58,8 @@ class Sentence(BaseModel):
 
     @property
     def is_suitable_sentence(self) -> bool:
-        # Removing punctuation
-        sentence_without_punctuation = "".join(
-            char for char in str(self.sent) if char not in string.punctuation
-        )
-
-        # Split the sentence into words and remove words containing numbers
-        words = [
-            word
-            for word in sentence_without_punctuation.split()
-            if not any(char.isdigit() for char in word)
-        ]
-
-        # Check if the sentence has more than 5 words after removing numeric words
-        if len(words) > 5:
+        # Check if the sentence has more than 5 words after cleaning
+        if self.number_of_words_in_clean_sentence > 5:
             return True
         else:
             return False
@@ -80,24 +68,33 @@ class Sentence(BaseModel):
     def cleaned_sentence(self) -> str:
         # Remove newlines, digits and a selection of characters
         sentence = self.text
-        sentence = re.sub(
-            r"\d+",
-            "",
-            sentence,
-        )
         sentence = (
             sentence.replace("\t", " ")
             .replace(":", "")
-            .replace(",", "")
-            .replace(".", "")
             .replace("(", "")
             .replace(")", "")
             .replace("-", "")
             .replace("–", "")
             .replace("/", "")
         )
-        sentence = " ".join(sentence.split())
-        return sentence.strip()
+        sentence = "".join(char for char in sentence if char not in string.punctuation)
+        # Split the sentence into words and remove words containing numbers
+        words = [
+            word
+            for word in sentence.split()
+            if not any(char.isdigit() for char in word)
+        ]
+        sentence = " ".join(words)
+        # common_one_word_sentences = ['metod', 'slutsats', 'tabell',
+        #                              'problem', 'problemformulering', 'bilaga']
+        # for word in common_one_word_sentences:
+        #     if sentence.lower() == word:
+        #         sentence = ""
+        return sentence
+
+    @property
+    def number_of_words_in_clean_sentence(self) -> int:
+        return len(self.cleaned_sentence.split())
 
     @property
     def has_content_after_cleaning(self) -> bool:
@@ -109,21 +106,32 @@ class Sentence(BaseModel):
         # Language detection is needed to find out
         # it if already exists in the database
         if not self.has_content_after_cleaning:
-            logger.warning("Skipped empty sentence")
+            logger.debug("Skipped empty sentence")
         else:
-            self.detect_language()
-            self.insert_score()
-            self.iterate_tokens()
-            # We don't trust scores below this threshold
-            # They are often occur when only one or two tokens
-            # are left after cleaning
-            # Also don't add sentences with these unlikely languages as
-            # they are just hallucinations by the model
-            not_accepted_languages = ['ko', 'ceb', 'jv', 'sh', 'is', 'ms', 'nds', 'nl']
-            if self.score >= 0.4 and self.detected_language not in not_accepted_languages:
-                sentence_id = self.id
-                if not sentence_id:
-                    if self.is_suitable_sentence:
+            # We avoid inserting garbage tokens from sentences
+            # which are too short
+            if self.number_of_words_in_clean_sentence == 1:
+                logger.debug(
+                    "Skipping token from one-word sentence\n"
+                    f"cleaned sentence: {self.cleaned_sentence}"
+                )
+            else:
+                # Found more than one word
+                self.detect_language()
+                self.insert_score()
+                self.iterate_tokens()
+                # We don't trust scores below this threshold
+                # They are often occur when only one or two tokens
+                # are left after cleaning
+                # Also don't add sentences with these unlikely languages as
+                # they are just hallucinations by the model
+                if (
+                    self.is_suitable_sentence
+                    and self.detected_language in config.accepted_languages
+                    and self.score >= 0.4
+                ):
+                    sentence_id = self.id
+                    if not sentence_id:
                         self.generate_uuid()
                         insert = Insert()
                         insert.connect_and_setup()
@@ -131,16 +139,18 @@ class Sentence(BaseModel):
                         insert.link_sentence_to_rawtokens(sentence=self)
                         insert.close_db()
                     else:
-                        logger.info("Skipping unsuitable sentence")
+                        logger.debug("Skipping sentence we already have analyzed")
                 else:
-                    logger.info("Skipping sentence we already have analyzed")
-            else:
-                logger.warning(
-                    "Skipping sentence with language detection score below 0.4 "
-                    "or a language code which is highly unlikely:\n"
-                    f"lang: {self.detected_language}\n"
-                    f"sentence: {self.cleaned_sentence}"
-                )
+                    # todo insert hallucinations in new table discarded
+                    logger.debug(
+                        "Skipping unsuitable sentence which is too short, "
+                        "with language detection score below 0.4 "
+                        "or a language code we accept:\n"
+                        f"lang: {self.detected_language}\n"
+                        f"score: {self.score}\n"
+                        f"cleaned word count: {self.number_of_words_in_clean_sentence}\n"
+                        f"cleaned sentence: {self.cleaned_sentence}"
+                    )
 
     def insert_score(self):
         read = Read()
@@ -159,6 +169,10 @@ class Sentence(BaseModel):
             token.analyze_and_insert()
             if token.is_accepted_token:
                 self.accepted_tokens.append(token)
+            else:
+                logger.debug(
+                    f"Discarded token: '{token.rawtoken}@{self.detected_language}'"
+                )
 
     # def clean_and_print_sentence(self):
     #     logger.info(

@@ -15,4 +15,4 @@ class Update(Mariadb):
         params = (document.id,)
         self.cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("updated document as processed")
+        logger.debug("updated document as processed")

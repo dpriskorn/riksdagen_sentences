@@ -9,17 +9,8 @@ logger = logging.getLogger(__name__)
 
 
 class Insert(Mariadb):
-    def connect_and_setup(self):
-        self.connect_to_mariadb()
-        self.initialize_mariadb_cursor()
-        # todo move this to own classes
-        self.load_languages_from_yaml()
-        self.load_lexical_categories_from_yaml()
-        self.insert_languages()
-        self.insert_lexical_categories()
-
     def insert_languages(self):
-        logger.info("Inserting languages from YAML")
+        logger.debug("Inserting languages from YAML")
         # Construct the SQL INSERT query
         query = """
                 INSERT IGNORE INTO language (name_en, iso_code, qid)
@@ -37,7 +28,7 @@ class Insert(Mariadb):
         self.commit_to_database()
 
     def insert_datasets_in_database(self, datasets):
-        logger.info("Inserting datasets from YAML")
+        logger.debug("Inserting datasets from YAML")
         query = """
                 INSERT IGNORE INTO dataset (title, qid, workdirectory)
                 VALUES (%s, %s, %s)
@@ -54,7 +45,7 @@ class Insert(Mariadb):
         self.commit_to_database()
 
     def insert_lexical_categories(self):
-        logger.info("Inserting lexical categories from YAML")
+        logger.debug("Inserting lexical categories from YAML")
         for postag, qid in self.lexical_categories.items():
             self.cursor.execute(
                 "INSERT IGNORE INTO lexical_category (qid, postag) VALUES (%s, %s)",
@@ -82,7 +73,7 @@ class Insert(Mariadb):
         values = (document.external_id, document.dataset_id)
         self.cursor.execute(query, values)
         self.commit_to_database()
-        logger.info("Document added to the database.")
+        logger.debug("Document added to the database.")
 
     def insert_rawtoken(self, token: Any):
         query = """
@@ -98,7 +89,7 @@ class Insert(Mariadb):
         )
         self.cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("rawtoken inserted")
+        logger.debug("rawtoken inserted")
 
     def insert_sentence(self, sentence: Any):
         query = """
@@ -114,7 +105,7 @@ class Insert(Mariadb):
         )
         self.cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("sentence inserted")
+        logger.debug("sentence inserted")
 
     def insert_score(self, sentence: Any):
         query = """
@@ -124,7 +115,7 @@ class Insert(Mariadb):
         params = (sentence.score,)
         self.cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("score inserted")
+        logger.debug("score inserted")
 
     def link_sentence_to_rawtokens(self, sentence: Any):
         for token in sentence.accepted_tokens:
@@ -135,7 +126,7 @@ class Insert(Mariadb):
             params = (sentence.id, token.id)
             self.cursor.execute(query, params)
             self.commit_to_database()
-        logger.info("rawtoken <-> sentence links inserted")
+        logger.debug("rawtoken <-> sentence links inserted")
 
     def insert_normtoken(self, token: Any):
         query = """
@@ -146,7 +137,7 @@ class Insert(Mariadb):
         params = (token.normalized_token,)
         self.cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("normtoken inserted")
+        logger.debug("normtoken inserted")
 
     def link_normtoken_to_rawtoken(self, token: Any):
         query = """
@@ -156,7 +147,7 @@ class Insert(Mariadb):
         params = (token.normtoken_id, token.id)
         self.cursor.execute(query, params)
         self.commit_to_database()
-        logger.info("rawtoken <-> normtoken link inserted")
+        logger.debug("rawtoken <-> normtoken link inserted")
 
     def link_lexeme_form_to_rawtoken(self, token: Any):
         # todo can we do this automatically?

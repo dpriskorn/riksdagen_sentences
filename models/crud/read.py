@@ -8,10 +8,6 @@ logger = logging.getLogger(__name__)
 
 
 class Read(Mariadb):
-    def connect_and_setup(self):
-        self.connect_to_mariadb()
-        self.initialize_mariadb_cursor()
-
     def get_all_dataset_ids(self) -> List[int]:
         """Return ids of all datasets"""
         query = """SELECT id
@@ -93,7 +89,7 @@ class Read(Mariadb):
             raise PostagError(f"postag {token.pos} not found in database")
         else:
             rowid = result[0]
-        logger.info(f"Got lexical category rowid: {rowid}")
+        logger.debug(f"Got lexical category rowid: {rowid}")
         return rowid
 
     def get_score(self, sentence: Any) -> int:
@@ -108,7 +104,7 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             score_id = result[0]
-            logger.info(f"Got score id: {score_id}")
+            logger.debug(f"Got score id: {score_id}")
             return score_id
 
     def get_language(self, sentence: Any) -> int:
@@ -123,10 +119,16 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             rowid = result[0]
-            logger.info(f"Got language id: {rowid}")
+            logger.debug(f"Got language id: {rowid}")
             return rowid
         else:
-            raise MissingLanguageError(f"iso_code {code} for sentence {sentence.text}")
+            raise MissingLanguageError(
+                f"iso_code {code}:\n"
+                f"score: {sentence.score}\n"
+                f"clean word count: {sentence.number_of_words_in_clean_sentence}\n"
+                f"cleaned sentence '{sentence.cleaned_sentence}'\n"
+                f"raw sentence '{sentence.text}"
+            )
 
     def get_document_id(self, document: Any) -> int:
         query = """
@@ -139,7 +141,7 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             rowid = result[0]
-            logger.info(f"Got document id: {rowid}")
+            logger.debug(f"Got document id: {rowid}")
             return rowid
 
     def get_sentence_id(self, sentence: Any) -> int:
@@ -157,7 +159,7 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             rowid = result[0]
-            logger.info(f"Got sentence id: {rowid}")
+            logger.debug(f"Got sentence id: {rowid}")
             return rowid
 
     def get_normtoken_id(self, token: Any):
@@ -169,7 +171,7 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             rowid = result[0]
-            logger.info(f"Got normtoken id: {rowid}")
+            logger.debug(f"Got normtoken id: {rowid}")
             return rowid
 
     def get_rawtoken_id(self, token: Any):
@@ -181,5 +183,17 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             rowid = result[0]
-            logger.info(f"Got rawtoken id: {rowid}")
+            logger.debug(f"Got rawtoken id: {rowid}")
             return rowid
+
+    def get_processed_status(self, document) -> bool:
+        query = """SELECT processed
+                    FROM document
+                    WHERE id = %s;
+                """
+        self.cursor.execute(query, (document.id,))
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.debug(f"Got processed status: {rowid}")
+            return bool(rowid)
