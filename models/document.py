@@ -136,6 +136,10 @@ class Document(BaseModel):
                 )
                 # Load the Swedish language model
                 self.nlp = spacy.load("sv_core_news_lg")
+                # The senter is 10x faster than the parser and we don't need dependency parsing
+                # See https://spacy.io/models/
+                self.nlp.disable_pipe("parser")
+                self.nlp.enable_pipe("senter")
                 self.chunk_text()
                 # todo insert chunk md5 in the database
                 # self.print_number_of_chunks()
