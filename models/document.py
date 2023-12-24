@@ -24,7 +24,7 @@ class Document(BaseModel):
     dataset_id: int
     text: str = ""
     html: str = ""
-    chunk_size: int = 50000
+    chunk_size: int = 100000 # this is because of a spacy limitation
     chunks: List[str] = list()
     accepted_sentences: List[Sentence] = list()
     nlp: Any = None
@@ -73,12 +73,38 @@ class Document(BaseModel):
             [len(sentence.accepted_tokens) for sentence in self.accepted_sentences]
         )
 
+    @property
+    def text_length(self) -> int:
+        return len(self.text)
+
     def chunk_text(self):
-        # Function to chunk the text
-        start = 0
-        while start < len(self.text):
-            self.chunks.append(self.text[start : start + self.chunk_size])
-            start += self.chunk_size
+        """Function to chunk the text without splitting sentences"""
+        text_length = self.text_length
+        if text_length > self.chunk_size:
+            start = 0
+            while start < text_length:
+                # Find the end point ensuring it's a full stop
+                end = start + self.chunk_size
+
+                # Check if the end is within the text length
+                if end < text_length:
+                    # If the character at 'end' is not a full stop and we're not at the start,
+                    # keep moving 'end' backwards until a full stop is found or until reaching 'start'
+                    while self.text[end] != '.' and end > start:
+                        end -= 1
+
+                # If there's no full stop found within the chunk size, chunk until self.chunk_size
+                if end == start:
+                    end = start + self.chunk_size
+
+                # Add the chunk to the list
+                self.chunks.append(self.text[start:end])
+
+                # Update 'start' for the next iteration, move beyond the last full stop found
+                start = end + 1 if end + 1 < text_length else text_length
+        else:
+            # Append the whole text
+            self.chunks.append(self.text)
 
     def convert_html_to_text(self):
         # todo remove tables before conversion
