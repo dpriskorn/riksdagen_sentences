@@ -145,7 +145,7 @@ collection }-- dataset
 dataset }-- provider
 
 ' one to one
-ner -- ner_label
+entity -- ner_label
 sentence -- score
 sentence -- language
 rawtoken -- lexical_category
@@ -158,6 +158,6 @@ rawtoken }--{ rawtoken_sentence_linking
 sentence }--{ rawtoken_sentence_linking
 rawtoken }--{ rawtoken_lexeme_form_linking
 lexeme_form }--{ rawtoken_lexeme_form_linking
-sentence_ner_linking }--{ sentence
-ner }--{ sentence_ner_linking
+sentence_entity_linking }--{ sentence
+entity }--{ sentence_entity_linking
 @enduml
