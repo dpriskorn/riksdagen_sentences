@@ -85,7 +85,9 @@ class Token(BaseModel):
         unaccepted_chars = ["¶", "¤", "¥", "~", "$", "€", "|"]
         if self.cleaned_token:
             has_numeric = any(char.isnumeric() for char in self.rawtoken)
-            has_unacceptable_char = any(char in unaccepted_chars for char in self.rawtoken)
+            has_unacceptable_char = any(
+                char in unaccepted_chars for char in self.rawtoken
+            )
             if (
                 self.token.pos_ not in unaccepted_postags
                 and not has_numeric
@@ -101,15 +103,16 @@ class Token(BaseModel):
         return re.sub(
             r"\d+",
             "",
-            (self.rawtoken
-            .replace("\r", "")
-             .replace(":", "")
-            .replace(",", "")
-            .replace(".", "")
-            .replace("(", "")
-            .replace(")", "")
-            .replace("-", "")
-            .replace("–", "")
-            .replace("/", "")
-            .strip()),
+            (
+                self.rawtoken.replace("\r", "")
+                .replace(":", "")
+                .replace(",", "")
+                .replace(".", "")
+                .replace("(", "")
+                .replace(")", "")
+                .replace("-", "")
+                .replace("–", "")
+                .replace("/", "")
+                .strip()
+            ),
         )

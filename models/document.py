@@ -24,7 +24,7 @@ class Document(BaseModel):
     dataset_id: int
     text: str = ""
     html: str = ""
-    chunk_size: int = 100000 # this is because of a spacy limitation
+    chunk_size: int = 100000  # this is because of a spacy limitation
     chunks: List[str] = list()
     accepted_sentences: List[Sentence] = list()
     nlp: Any = None
@@ -90,7 +90,7 @@ class Document(BaseModel):
                 if end < text_length:
                     # If the character at 'end' is not a full stop and we're not at the start,
                     # keep moving 'end' backwards until a full stop is found or until reaching 'start'
-                    while self.text[end] != '.' and end > start:
+                    while self.text[end] != "." and end > start:
                         end -= 1
 
                 # If there's no full stop found within the chunk size, chunk until self.chunk_size
