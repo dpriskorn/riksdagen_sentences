@@ -100,6 +100,10 @@ class Sentence(BaseModel):
     def has_content_after_cleaning(self) -> bool:
         return bool(self.cleaned_sentence)
 
+    @property
+    def has_acceptable_score(self) -> bool:
+        return self.score >= 0.4
+
     def analyze_and_insert(self):
         # We insert and store valuable tokens even if the
         # sentence is not deemed suitable for our purposes
@@ -128,7 +132,7 @@ class Sentence(BaseModel):
                 if (
                     self.is_suitable_sentence
                     and self.detected_language in config.accepted_languages
-                    and self.score >= 0.4
+                    and self.has_acceptable_score
                 ):
                     sentence_id = self.id
                     if not sentence_id:
