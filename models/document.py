@@ -77,6 +77,11 @@ class Document(BaseModel):
     def text_length(self) -> int:
         return len(self.text)
 
+    @property
+    def equivalent_pages(self) -> int:
+        """We estimate that a standard A4 page has 450 words"""
+        return int(self.count_words/450)
+
     def chunk_text(self):
         """Function to chunk the text without splitting sentences"""
         text_length = self.text_length
@@ -125,7 +130,9 @@ class Document(BaseModel):
                 self.convert_html_to_text()
             if self.text:
                 print(
-                    f"Extracting document {self.external_id} with {self.count_words} words"
+                    f"Extracting document {self.external_id} with "
+                    f"{self.count_words} words which equals "
+                    f"{self.equivalent_pages} A4 pages"
                 )
                 # Load the Swedish language model
                 self.nlp = spacy.load("sv_core_news_lg")
