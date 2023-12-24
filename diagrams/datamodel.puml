@@ -107,8 +107,35 @@ entity rawtoken_normtoken_linking {
     + normtoken INT PRIMARY
 }
 
+'' This table holds the NER labels of spaCy
+entity ner_label {
+  + id SMALLINT PRIMARY
+  + label VARCHAR(30) UNIQUE
+  + description VARCHAR(255)
+}
 
-' one to many:
+'' This is a unique NER occurrence.
+'' E.g. label: Europe: ner_label_id -> id of 'LOC'
+entity entity {
+  + id INT
+  + label VARCHAR(255)
+  + ner_label_id INT
+  --
+  + PK (id)
+  + FK (ner_label_id) REFERENCES ner_label(id)
+}
+
+'' We only store one unique ner per sentence.
+'' We don't care about the same entity
+'' appearing multiple times in a sentence
+entity sentence_entity_linking {
+  + sentence INT
+  + entity INT
+  --
+  + PK (sentence, entity)
+}
+
+' many to one:
 lexeme_form }-- rawtoken
 normtoken }-- rawtoken
 rawtoken }-- sentence
@@ -118,6 +145,7 @@ collection }-- dataset
 dataset }-- provider
 
 ' one to one
+ner -- ner_label
 sentence -- score
 sentence -- language
 rawtoken -- lexical_category
@@ -130,4 +158,6 @@ rawtoken }--{ rawtoken_sentence_linking
 sentence }--{ rawtoken_sentence_linking
 rawtoken }--{ rawtoken_lexeme_form_linking
 lexeme_form }--{ rawtoken_lexeme_form_linking
+sentence_ner_linking }--{ sentence
+ner }--{ sentence_ner_linking
 @enduml
