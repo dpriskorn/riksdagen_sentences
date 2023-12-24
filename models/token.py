@@ -82,11 +82,14 @@ class Token(BaseModel):
         numeric characters and is not a symbol and
         not punctuation and has a detected language we accept"""
         unaccepted_postags = ["SPACE", "PUNCT", "SYM", "X"]
+        unaccepted_chars = ["¶", "¤", "¥", "~", "$", "€", "|"]
         if self.cleaned_token:
             has_numeric = any(char.isnumeric() for char in self.rawtoken)
+            has_unacceptable_char = any(char in unaccepted_chars for char in self.rawtoken)
             if (
                 self.token.pos_ not in unaccepted_postags
                 and not has_numeric
+                and not has_unacceptable_char
                 and self.sentence.detected_language in config.accepted_languages
             ):
                 return True
@@ -98,7 +101,9 @@ class Token(BaseModel):
         return re.sub(
             r"\d+",
             "",
-            self.rawtoken.replace(":", "")
+            (self.rawtoken
+            .replace("\r", "")
+             .replace(":", "")
             .replace(",", "")
             .replace(".", "")
             .replace("(", "")
@@ -106,5 +111,5 @@ class Token(BaseModel):
             .replace("-", "")
             .replace("–", "")
             .replace("/", "")
-            .strip(),
+            .strip()),
         )
