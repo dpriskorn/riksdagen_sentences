@@ -39,6 +39,8 @@ This way of chopping up open data can be applied to any open data, provided that
 Riksdagen has about 600k documents that can be downloaded as open data.
 The size of the resulting database has been estimated to >1TB when the analysis is complete.
 
+This project is a stepping stone to a larger database of sentences and tokens that we can use to enrich the lexicographic data in Wikidata.
+
 ## Installation
 Clone the repo
 
@@ -56,7 +58,14 @@ Example
 `$ python riksdagen_analyzer --analyze proposition`
 
 ## Sources
-https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
+### Unilingual
+* Riksdagen open data: 600k documents ~1TB database size in total https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
+### Multilingual
+* Digital Corpus of the European Parliament https://wt-public.emm4u.eu/Resources/DCEP-2013/DCEP-Download-Page.html (EU languages)
+* europarl corpus https://www.statmt.org/europarl/ (EU languages)
+* wikisentences https://analytics.wikimedia.org/published/datasets/one-off/santhosh/wikisentences/ (all Wikipedia languages)
+* The European Parliamentary Comparable and Parallel Corpora https://www.islrn.org/resources/036-939-425-010-1/ (en, es)
+* Corrected & Structured Europarl Corpus https://pub.cl.uzh.ch/wiki/public/costep/start (EU languages)
 
 ## Inspiration
 Alice Zhao https://www.youtube.com/watch?v=8Fw1nh8lR54
@@ -65,11 +74,9 @@ Alice Zhao https://www.youtube.com/watch?v=8Fw1nh8lR54
 GPLv3+
 
 ## What I learned
-* pandas is super nice and fast, but no so suitable for this job
 * the default sentenizer for Swedish in spaCy is not ideal
+* fasttext langdetect cannot reliably detect language of sentences with only one token/word
 * chatgpt can write good code, but it still outputs wonky code sometimes
-* through chatgpt I used the progress library tqdm 
-for the first time and it is very nice :)
 * working on millions of sentences with NLP takes time even on a fast machine 
 like my 8th gen 8-core i5 laptop
 * langdetect is slow and only utilizes 1 CPU
