@@ -150,9 +150,30 @@ class Document(BaseModel):
     # def print_number_of_sentences(self):
     #     logger.info(f"Extracted {len(self.accepted_sentences)} sentences")
 
+    @staticmethod
+    def clean_toc(chunk: str):
+        """We clean away sentences with more than three
+        full stops in a row because they are just
+        referring to headings found further down in the document
+        TOC= table of contents"""
+        lines = chunk.split('\n')
+        cleaned_lines = []
+
+        for line in lines:
+            if line.count("....") == 0:
+                cleaned_lines.append(line)
+            else:
+                print(f"Discarded line: '{line}'")
+
+        cleaned_chunk = '\n'.join(cleaned_lines)
+        return cleaned_chunk
+
     def iterate_chunks(self):
         count = 1
         for chunk in self.chunks:
+            chunk = self.clean_toc(chunk=chunk)
+            # print(chunk[:10000])
+            # exit()
             print(f"Iterating chunk {count}/" f"{self.number_of_chunks}")
             # todo check if chunk md5 has been processed
             doc = self.nlp(chunk)
