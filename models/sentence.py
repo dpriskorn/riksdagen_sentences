@@ -146,7 +146,8 @@ class Sentence(BaseModel):
                     else:
                         logger.debug("Skipping sentence we already have analyzed")
                 else:
-                    # todo insert hallucinations in new table discarded
+                    # we could insert these hallucinations in new table discarded,
+                    # but they are not worth much
                     logger.debug(
                         "Skipping unsuitable sentence which is too short, "
                         "with language detection score below 0.4 "

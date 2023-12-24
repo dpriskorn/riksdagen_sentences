@@ -142,7 +142,6 @@ class Document(BaseModel):
                 self.nlp.disable_pipe("parser")
                 self.nlp.enable_pipe("senter")
                 self.chunk_text()
-                # todo insert chunk md5 in the database
                 # self.print_number_of_chunks()
                 self.iterate_chunks()
         else:
@@ -177,7 +176,6 @@ class Document(BaseModel):
             # print(chunk[:10000])
             # exit()
             print(f"Iterating chunk {count}/" f"{self.number_of_chunks}")
-            # todo check if chunk md5 has been processed
             doc = self.nlp(chunk)
             self.iterate_sentences(doc=doc)
             count += 1
