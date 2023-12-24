@@ -4,3 +4,7 @@ class PostagError(BaseException):
 
 class MissingLanguageError(BaseException):
     pass
+
+
+class MissingInformationError(BaseException):
+    pass

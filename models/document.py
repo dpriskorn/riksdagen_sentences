@@ -2,6 +2,7 @@ import logging
 from typing import List, Any
 
 import spacy
+from spacy.language import Doc
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
@@ -80,7 +81,7 @@ class Document(BaseModel):
     @property
     def equivalent_pages(self) -> int:
         """We estimate that a standard A4 page has 450 words"""
-        return int(self.count_words/450)
+        return int(self.count_words / 450)
 
     def chunk_text(self):
         """Function to chunk the text without splitting sentences"""
@@ -156,16 +157,17 @@ class Document(BaseModel):
         full stops in a row because they are just
         referring to headings found further down in the document
         TOC= table of contents"""
-        lines = chunk.split('\n')
+        lines = chunk.split("\n")
         cleaned_lines = []
 
         for line in lines:
             if line.count("....") == 0:
                 cleaned_lines.append(line)
             else:
-                print(f"Discarded line: '{line}'")
+                pass
+                # logger.debug(f"Discarded line: '{line}'")
 
-        cleaned_chunk = '\n'.join(cleaned_lines)
+        cleaned_chunk = "\n".join(cleaned_lines)
         return cleaned_chunk
 
     def iterate_chunks(self):
@@ -184,7 +186,7 @@ class Document(BaseModel):
             f"accepted sentences with a total of {self.number_of_accepted_tokens}"
         )
 
-    def iterate_sentences(self, doc: Any):
+    def iterate_sentences(self, doc: Doc):
         sentence_count = 0
         for _ in doc.sents:
             sentence_count += 1
@@ -193,7 +195,7 @@ class Document(BaseModel):
         for sent in doc.sents:
             if count % 100 == 0 or count == 1:
                 print(f"Iterating sentence {count}/{sentence_count}")
-            sentence = Sentence(sent=sent, document=self)
+            sentence = Sentence(doc=doc, sent=sent, document=self)
             sentence.analyze_and_insert()
             self.accepted_sentences.append(sentence)
             count += 1

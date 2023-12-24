@@ -2,8 +2,10 @@ import logging
 from typing import Any
 
 import yaml
+from spacy.tokens import Span
 
 from models.crud.database_handler import Mariadb
+from models.crud.read import Read
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +42,17 @@ class Insert(Mariadb):
             workdirectory = data["workdirectory"]
             qid_int = self.item_int(qid)
             params = (title, qid_int, workdirectory)
-            logger.debug(self.cursor.mogrify(query, params))
+            # logger.debug(self.cursor.mogrify(query, params))
             self.cursor.execute(query, params)
+        self.commit_to_database()
+
+    def insert_ner_labels(self):
+        logger.debug("Inserting NER labels from YAML")
+        for label, desc in self.ner_labels.items():
+            self.cursor.execute(
+                "INSERT IGNORE INTO ner_label (label, description) VALUES (%s, %s)",
+                (label, desc),
+            )
         self.commit_to_database()
 
     def insert_lexical_categories(self):
@@ -91,7 +102,7 @@ class Insert(Mariadb):
         self.commit_to_database()
         logger.debug("rawtoken inserted")
 
-    def insert_sentence(self, sentence: Any):
+    def insert_sentence(self, sentence: Any) -> int:
         query = """
         INSERT INTO sentence (text, uuid, document, language, score)
         VALUES (%s, %s, %s, %s, %s);
@@ -106,6 +117,28 @@ class Insert(Mariadb):
         self.cursor.execute(query, params)
         self.commit_to_database()
         logger.debug("sentence inserted")
+        return self.cursor.lastrowid
+
+    def insert_entity(self, entity: Any) -> int:
+        query = """
+        INSERT INTO entity (label, ner_label)
+        VALUES (%s, %s);
+        """
+        params = (entity.label, entity.ner_label_id)
+        self.cursor.execute(query, params)
+        self.commit_to_database()
+        logger.debug("entity inserted")
+        return self.cursor.lastrowid
+
+    def link_sentence_to_entity(self, entity_id: int, sentence_id: int):
+        """We use ignore here because it does not increment anything"""
+        query = """INSERT IGNORE INTO sentence_entity_linking (sentence, entity)
+        VALUES (%s, %s);
+        """
+        params = (sentence_id, entity_id)
+        self.cursor.execute(query, params)
+        self.commit_to_database()
+        logger.debug("sentence to entity link inserted")
 
     def insert_score(self, sentence: Any):
         query = """
@@ -175,3 +208,9 @@ class Insert(Mariadb):
         with open(self.lexical_categories_config_path, "r") as file:
             # Read YAML content from the file
             self.lexical_categories = yaml.safe_load(file)
+
+    def load_ner_labels_from_yaml(self):
+        # Load YAML into a dictionary
+        with open(self.named_entity_recognition_labels_config_path, "r") as file:
+            # Read YAML content from the file
+            self.ner_labels = yaml.safe_load(file)

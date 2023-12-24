@@ -1,8 +1,11 @@
 import logging
 from typing import Any, List
 
+import spacy
+from spacy.tokens import Span
+
 from models.crud.database_handler import Mariadb
-from models.exceptions import PostagError, MissingLanguageError
+from models.exceptions import PostagError, MissingLanguageError, MissingInformationError
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,7 @@ class Read(Mariadb):
             WHERE id = %s;
         """
         params = (dataset.id,)
-        logger.debug(self.cursor.mogrify(query, params))
+        # logger.debug(self.cursor.mogrify(query, params))
         self.cursor.execute(query, params)
         result = self.cursor.fetchone()
         # print(result)
@@ -99,7 +102,7 @@ class Read(Mariadb):
             WHERE ROUND(value, 2) = %s
         """
         params = (sentence.score,)
-        logger.debug(self.cursor.mogrify(query, params))
+        # logger.debug(self.cursor.mogrify(query, params))
         self.cursor.execute(query, params)
         result = self.cursor.fetchone()
         if result:
@@ -197,3 +200,34 @@ class Read(Mariadb):
             rowid = result[0]
             logger.debug(f"Got processed status: {rowid}")
             return bool(rowid)
+
+    def get_ner_label_id(self, entity: Any):
+        query = """SELECT id
+        FROM ner_label
+        WHERE label = %s;
+        """
+        self.cursor.execute(query, (entity.ner_label,))
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.debug(f"Got ner_label id: {rowid}")
+            return rowid
+        else:
+            raise MissingInformationError(
+                f"ner label '{entity.ner_label}' "
+                f"not found, description: '{spacy.explain(entity.ner_label)}'"
+            )
+
+    def get_entity_id(self, entity: Any) -> int:
+        query = """SELECT id
+                FROM entity
+                WHERE label = %s and ner_label = %s;
+                """
+        self.cursor.execute(query, (entity.label, entity.ner_label_id))
+        result = self.cursor.fetchone()
+        if result:
+            rowid = result[0]
+            logger.debug(f"Got entity id: {rowid} for {entity.label}:{entity.ner_label_id}")
+            return rowid
+        else:
+            logger.debug(f"No entity found for {entity.label}:{entity.ner_label_id}")
