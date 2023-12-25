@@ -5,17 +5,21 @@ from typing import Any, List
 
 from ftlangdetect import detect
 from pydantic import BaseModel
+from spacy.language import Doc
+from spacy.tokens import Span
 
 import config
 from models.crud.insert import Insert
 from models.crud.read import Read
+from models.entities import Entities
 from models.token import Token
 
 logger = logging.getLogger(__name__)
 
 
 class Sentence(BaseModel):
-    sent: Any
+    sent: Span
+    doc: Doc
     document: Any
     accepted_tokens: List[Token] = list()
     uuid: str = ""
@@ -100,6 +104,10 @@ class Sentence(BaseModel):
     def has_content_after_cleaning(self) -> bool:
         return bool(self.cleaned_sentence)
 
+    @property
+    def has_acceptable_score(self) -> bool:
+        return self.score >= 0.4
+
     def analyze_and_insert(self):
         # We insert and store valuable tokens even if the
         # sentence is not deemed suitable for our purposes
@@ -128,20 +136,18 @@ class Sentence(BaseModel):
                 if (
                     self.is_suitable_sentence
                     and self.detected_language in config.accepted_languages
-                    and self.score >= 0.4
+                    and self.has_acceptable_score
                 ):
                     sentence_id = self.id
                     if not sentence_id:
+                        # self.print_ner_result()
                         self.generate_uuid()
-                        insert = Insert()
-                        insert.connect_and_setup()
-                        insert.insert_sentence(sentence=self)
-                        insert.link_sentence_to_rawtokens(sentence=self)
-                        insert.close_db()
+                        self.insert_sentence_and_entities_and_link()
                     else:
                         logger.debug("Skipping sentence we already have analyzed")
                 else:
-                    # todo insert hallucinations in new table discarded
+                    # we could insert these hallucinations in new table discarded,
+                    # but they are not worth much
                     logger.debug(
                         "Skipping unsuitable sentence which is too short, "
                         "with language detection score below 0.4 "
@@ -201,3 +207,24 @@ class Sentence(BaseModel):
             self.detected_language = result["lang"]
         else:
             logger.warning(f"No content after cleaning, skipping language detection")
+
+    def print_ner_result(self) -> None:
+        count = 0
+        for entity in self.doc.ents:
+            if entity.start >= self.sent.start and entity.end <= self.sent.end:
+                if count == 0:
+                    print("NER result:")
+                print(f"{entity.text} -> {entity.label_}")
+                count += 1
+        # sleep(1)
+
+    def insert_sentence_and_entities_and_link(self):
+        logger.debug("Inserting sentence, entities and linking them all")
+        insert = Insert()
+        insert.connect_and_setup()
+        sentence_id = insert.insert_sentence(sentence=self)
+        insert.link_sentence_to_rawtokens(sentence=self)
+        insert.close_db()
+        entities = Entities(sentence_id=sentence_id, sentence=self)
+        entities.extract_and_insert()
+

@@ -2,6 +2,7 @@ import logging
 from typing import List, Any
 
 import spacy
+from spacy.language import Doc
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
@@ -77,6 +78,11 @@ class Document(BaseModel):
     def text_length(self) -> int:
         return len(self.text)
 
+    @property
+    def equivalent_pages(self) -> int:
+        """We estimate that a standard A4 page has 450 words"""
+        return int(self.count_words / 450)
+
     def chunk_text(self):
         """Function to chunk the text without splitting sentences"""
         text_length = self.text_length
@@ -125,12 +131,17 @@ class Document(BaseModel):
                 self.convert_html_to_text()
             if self.text:
                 print(
-                    f"Extracting document {self.external_id} with {self.count_words} words"
+                    f"Extracting document {self.external_id} with "
+                    f"{self.count_words} words which equals "
+                    f"{self.equivalent_pages} A4 pages"
                 )
                 # Load the Swedish language model
                 self.nlp = spacy.load("sv_core_news_lg")
+                # The senter is 10x faster than the parser and we don't need dependency parsing
+                # See https://spacy.io/models/
+                self.nlp.disable_pipe("parser")
+                self.nlp.enable_pipe("senter")
                 self.chunk_text()
-                # todo insert chunk md5 in the database
                 # self.print_number_of_chunks()
                 self.iterate_chunks()
         else:
@@ -139,20 +150,42 @@ class Document(BaseModel):
     # def print_number_of_sentences(self):
     #     logger.info(f"Extracted {len(self.accepted_sentences)} sentences")
 
+    @staticmethod
+    def clean_toc(chunk: str):
+        """We clean away sentences with more than three
+        full stops in a row because they are just
+        referring to headings found further down in the document
+        TOC= table of contents"""
+        lines = chunk.split("\n")
+        cleaned_lines = []
+
+        for line in lines:
+            if line.count("....") == 0:
+                cleaned_lines.append(line)
+            else:
+                pass
+                # logger.debug(f"Discarded line: '{line}'")
+
+        cleaned_chunk = "\n".join(cleaned_lines)
+        return cleaned_chunk
+
     def iterate_chunks(self):
         count = 1
         for chunk in self.chunks:
+            chunk = self.clean_toc(chunk=chunk)
+            # print(chunk[:10000])
+            # exit()
             print(f"Iterating chunk {count}/" f"{self.number_of_chunks}")
-            # todo check if chunk md5 has been processed
             doc = self.nlp(chunk)
             self.iterate_sentences(doc=doc)
             count += 1
         print(
             f"Found {self.number_of_accepted_sentences} "
-            f"accepted sentences with a total of {self.number_of_accepted_tokens}"
+            f"accepted sentences with a total of "
+            f"{self.number_of_accepted_tokens} accepted tokens"
         )
 
-    def iterate_sentences(self, doc: Any):
+    def iterate_sentences(self, doc: Doc):
         sentence_count = 0
         for _ in doc.sents:
             sentence_count += 1
@@ -161,7 +194,7 @@ class Document(BaseModel):
         for sent in doc.sents:
             if count % 100 == 0 or count == 1:
                 print(f"Iterating sentence {count}/{sentence_count}")
-            sentence = Sentence(sent=sent, document=self)
+            sentence = Sentence(doc=doc, sent=sent, document=self)
             sentence.analyze_and_insert()
             self.accepted_sentences.append(sentence)
             count += 1

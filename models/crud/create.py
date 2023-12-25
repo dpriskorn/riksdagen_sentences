@@ -22,6 +22,8 @@ class Create(Mariadb):
         # todo move this to own classes
         insert.load_languages_from_yaml()
         insert.load_lexical_categories_from_yaml()
+        insert.load_ner_labels_from_yaml()
+        insert.insert_ner_labels()
         insert.insert_languages()
         insert.insert_lexical_categories()
         insert.close_db()
@@ -30,6 +32,12 @@ class Create(Mariadb):
         logger.info("Creating tables")
         # Note: we get weird errors if the foreign key columns are not the exakt same type
         sql_commands = [
+            """CREATE TABLE IF NOT EXISTS ner_label (
+                id SMALLINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                label VARCHAR(30) NOT NULL UNIQUE,
+                description VARCHAR(255) NOT NULL
+            );
+            """,
             """CREATE TABLE IF NOT EXISTS lexical_category (
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 qid SMALLINT UNSIGNED NOT NULL,
@@ -86,6 +94,23 @@ class Create(Mariadb):
                 FOREIGN KEY(language) REFERENCES language(id),
                 FOREIGN KEY(score) REFERENCES score(id)
             );""",
+            """
+            CREATE TABLE IF NOT EXISTS entity (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                label VARCHAR(255) NOT NULL,
+                ner_label SMALLINT UNSIGNED NOT NULL,
+                UNIQUE (label, ner_label),
+                FOREIGN KEY (ner_label) REFERENCES ner_label(id)
+            )
+            """,
+            """CREATE TABLE IF NOT EXISTS sentence_entity_linking (
+                sentence INT UNSIGNED NOT NULL,
+                entity INT UNSIGNED NOT NULL,
+                PRIMARY KEY (sentence, entity),
+                FOREIGN KEY (sentence) REFERENCES sentence(id),
+                FOREIGN KEY (entity) REFERENCES entity(id)
+            );
+            """,
             """CREATE TABLE IF NOT EXISTS lexeme_form (
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 lexeme INT UNSIGNED NOT NULL,

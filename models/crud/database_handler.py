@@ -12,8 +12,12 @@ logger = logging.getLogger(__name__)
 class Mariadb(BaseModel):
     lexical_categories: Dict[Any, Any] = dict()
     languages: Dict[Any, Any] = dict()
+    ner_labels: Dict[Any, Any] = dict()
     language_config_path: str = "config/languages.yml"
     lexical_categories_config_path: str = "config/lexical_categories.yml"
+    named_entity_recognition_labels_config_path: str = (
+        "config/named_entity_recognition_labels.yml"
+    )
     connection: Connection = None
     # cursor: Cursor = None
     # row_cursor: Cursor = None
