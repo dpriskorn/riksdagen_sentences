@@ -7,8 +7,8 @@ Wikidata lexemes and other resources.
 
 The advantage of such a dataset is huge from a language perspective. 
 The sentences contain valuable information about what is going on in society. 
-They contain a lot of new words which enter the language via political dialogue 
-or written documents from institutions in the Swedish state .
+They contain a lot of words, phrases and idioms which are highly valuable to anyone interested in the language.
+The 600k documents to be analyzed contains a lot of political dialogue and written documents from institutions in the Swedish state.
 
 Keywords: NLP, data science, open data, swedish, 
 open government data, riksdagen, sweden, API
