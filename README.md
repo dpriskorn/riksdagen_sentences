@@ -47,6 +47,11 @@ Riksdagen has about 600k documents that can be downloaded as open data.
 
 This project is a stepping stone to an even larger database of sentences and tokens that we can use to enrich the lexicographic data in Wikidata.
 
+## Data model
+![Datamodel](/diagrams/datamodel.png?raw=true)
+
+[UML source](/diagrams/datamodel.puml)
+
 ## Installation
 Clone the repo
 
@@ -59,9 +64,10 @@ Also download the model needed
 `$ python -m spacy download sv_core_news_lg`
 (250 MB)
 
+Now download some of the source datasets from Riksdagen and put them in a data/sv/ folder hierarchy.
+
 ## Use
-Example
-`$ python riksdagen_analyzer --analyze proposition`
+`$ python riksdagen_analyzer --analyze`
 
 ## Sources
 ### Unilingual
