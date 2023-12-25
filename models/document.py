@@ -181,7 +181,8 @@ class Document(BaseModel):
             count += 1
         print(
             f"Found {self.number_of_accepted_sentences} "
-            f"accepted sentences with a total of {self.number_of_accepted_tokens}"
+            f"accepted sentences with a total of "
+            f"{self.number_of_accepted_tokens} accepted tokens"
         )
 
     def iterate_sentences(self, doc: Doc):
