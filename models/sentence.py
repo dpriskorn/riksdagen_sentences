@@ -140,7 +140,7 @@ class Sentence(BaseModel):
                 ):
                     sentence_id = self.id
                     if not sentence_id:
-                        self.print_ner_result()
+                        # self.print_ner_result()
                         self.generate_uuid()
                         self.insert_sentence_and_entities_and_link()
                     else:
