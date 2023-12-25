@@ -1,5 +1,5 @@
-# riksdagen sentences
-Project that aims to analyze and sentenize all the open 
+# Riksdagen Sentences
+This civic science project aims to analyze and sentenize all the open 
 data of Riksdagen using spaCy 
 to create an easily linkable 
 dataset of sentences that can be refered to from 
@@ -7,11 +7,14 @@ Wikidata lexemes and other resources.
 
 The advantage of such a dataset is huge from a language perspective. 
 The sentences contain valuable information about what is going on in society. 
-They contain a lot of new words which enter the language via political dialogue 
-or written documents from institutions in the Swedish state .
+They contain a lot of words, phrases and idioms which are highly valuable to anyone interested in the language.
+The 600k documents to be analyzed contains a lot of political dialogue and written documents from institutions in the Swedish state.
 
 Keywords: NLP, data science, open data, swedish, 
 open government data, riksdagen, sweden, API
+
+# Author
+[Dennis Priskorn](https://www.wikidata.org/wiki/Q111016131).
 
 ## Idea
 Use spaCy to create the first version.
@@ -23,23 +26,26 @@ data over time, the hashes and UUIDs will change, but all released
 versions will be locked in time and can always be refered to 
 consistently and reliably.
 
+The resulting dataset is planned to be released in Zenodo 
+and is expected to be around 1TB  
+
 ## Features
 * reliability
 * locked in time
 * referencable
-* language detected
+* language detected (using Fasttext langdetect)
 * uniquely identifiable
 * linkable (the individual sentences are not planned to be 
 linkable at this stage, but the release is and line numbers 
 or UUIDs can be used to link with no ambiguity)
+* Named Entity Recognition entities for each sentence and document
 
 ## Scope
-This way of chopping up open data can be applied to any open data, provided that it is in a machine readable form like TEXT or HTML.
+This way of chopping up open data can be applied to any open data, provided that it is in a machine readable form like TEXT, XML, JSON or HTML.
 
 Riksdagen has about 600k documents that can be downloaded as open data.
-The size of the resulting database has been estimated to >1TB when the analysis is complete.
 
-This project is a stepping stone to a larger database of sentences and tokens that we can use to enrich the lexicographic data in Wikidata.
+This project is a stepping stone to an even larger database of sentences and tokens that we can use to enrich the lexicographic data in Wikidata.
 
 ## Installation
 Clone the repo
@@ -60,7 +66,8 @@ Example
 ## Sources
 ### Unilingual
 * Riksdagen open data: 600k documents ~1TB database size in total https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
-### Multilingual
+
+## Related corpora
 * Digital Corpus of the European Parliament https://wt-public.emm4u.eu/Resources/DCEP-2013/DCEP-Download-Page.html (EU languages)
 * europarl corpus https://www.statmt.org/europarl/ (EU languages)
 * wikisentences https://analytics.wikimedia.org/published/datasets/one-off/santhosh/wikisentences/ (all Wikipedia languages)
@@ -77,8 +84,9 @@ GPLv3+
 * the default sentenizer for Swedish in spaCy is not ideal
 * fasttext langdetect cannot reliably detect language of sentences with only one token/word
 * chatgpt can write good code, but it still outputs wonky code sometimes
+* chatgpt is very good at creating sql queries!
 * working on millions of sentences with NLP takes time even on a fast machine 
 like my 8th gen 8-core i5 laptop
-* langdetect is slow and only utilizes 1 CPU
+* python langdetect was too slow and only utilized 1 CPU, swiching to fasttext langdetect was a bit challenging because I had to fix the python module
 * it's so nice to work with classes and small methods and 
 combining them in ways that makes sense. KISS!
