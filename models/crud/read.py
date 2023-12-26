@@ -73,9 +73,9 @@ class Read(Mariadb):
             print(f"Got dataset id: {dataset_id}")
             return dataset_id
 
-    def get_rawtoken_with_certain_lexical_category(
+    def get_rawtoken_id_with_specific_language_and_lexical_category(
         self, language: str, rawtoken: str, lexical_category: str
-    ):
+    ) -> int:
         query = """
         SELECT rawtoken.id
         FROM rawtoken
@@ -86,8 +86,9 @@ class Read(Mariadb):
         AND language.iso_code = %s;
         """
         self.cursor.execute(query, (rawtoken, lexical_category, language))
-        results = self.cursor.fetchall()
-        return results
+        result = self.cursor.fetchone()
+        if result:
+            return result[0]
 
     def count_sentences_for_rawtoken_without_space(self, rawtoken_id: int) -> int:
         query = """
@@ -104,15 +105,15 @@ class Read(Mariadb):
         else:
             raise ValueError("Got no result for count")
 
-    def count_sentences_for_compound_token(self, compound_token: str) -> int:
+    def count_sentences_for_compound_token(self, language: str, compound_token: str) -> int:
         query = """
         SELECT COUNT(sentence.id) AS sentence_count
         FROM sentence
-        JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
-        JOIN score ON sentence.score_id = score.id
-        WHERE rawtoken_sentence_linking.rawtoken = %s
+        JOIN language ON sentence.language = language.id
+        WHERE language.iso_code = %s
+        AND LOWER(sentence.text) LIKE LOWER(%s)
         """
-        self.cursor.execute(query, (compound_token,))
+        self.cursor.execute(query, (language, f"%{compound_token}%"))
         result = self.cursor.fetchone()
         if result:
             return int(result[0])
@@ -130,6 +131,7 @@ class Read(Mariadb):
             JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
             JOIN score ON sentence.score = score.id
             WHERE rawtoken_sentence_linking.rawtoken = %s
+            ORDER BY sentence.text ASC
             LIMIT %s OFFSET %s;
             """
             self.cursor.execute(query, (rawtoken_id, limit, offset))
@@ -141,21 +143,24 @@ class Read(Mariadb):
     def get_sentences_for_compound_token(
         self, compound_token: str, language: str, limit: int = 100, offset: int = 0
     ) -> Tuple[int, List[SentenceResult]]:
-        count = self.count_sentences_for_compound_token(compound_token=compound_token)
+        """This is case-insensitive"""
+        count = self.count_sentences_for_compound_token(language=language, compound_token=compound_token)
         if count:
             query = """
-            SELECT sentence.text, sentence.uuid
+            SELECT sentence.text, sentence.uuid, score.value
             FROM sentence
-            JOIN language ON sentence.language_id = language.id
+            JOIN language ON sentence.language = language.id
+            JOIN score ON sentence.score = score.id
             WHERE language.iso_code = %s
-            AND LOWER(sentence.text) = LOWER(%s)
-            LIMIT %s
-            OFFSET %s;
+            AND LOWER(sentence.text) LIKE LOWER(%s)
+            ORDER BY sentence.text ASC
+            LIMIT %s OFFSET %s;
             """
-            self.cursor.execute(query, (compound_token, language, limit, offset))
+            self.cursor.execute(query, (language, f"%{compound_token}%", limit, offset))
             results = self.cursor.fetchall()
             return count, self.parse_into_sentence_results(results=results)
         else:
+            logger.info("Count was 0")
             return count, list()
 
     def get_lexical_category_id(self, token: Any) -> int:

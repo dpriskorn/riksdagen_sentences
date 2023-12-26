@@ -1,4 +1,10 @@
+import logging
+
+import config
 from models.api import app
+
+logger = logging.basicConfig(level=config.loglevel)
+
 
 if __name__ == "__main__":
     # Your code here, if needed

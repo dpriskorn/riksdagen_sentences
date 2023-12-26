@@ -1,3 +1,4 @@
+import logging
 from typing import List, Dict, Any, Tuple
 
 from fastapi import FastAPI, APIRouter
@@ -11,6 +12,8 @@ from models.crud.read import Read
 app = FastAPI()
 router = APIRouter()
 app.include_router(router)
+
+logger = logging.getLogger(__name__)
 
 
 def supported_lexical_language_qids() -> List[str]:
@@ -44,7 +47,7 @@ def lookup_sentences(
     read = Read()
     read.connect_and_setup()
     if is_compound_token(token=token):
-        print("Got compund token")
+        logger.info("Got compund token")
         """This is complicated because Wikidata does NOT store
         all possible forms of phrases currently so we need to
         lookup the forms of the syntactic head to be sure we get
@@ -63,8 +66,8 @@ def lookup_sentences(
         read.close_db()
         return data
     else:
-        print("Got simple token")
-        rawtoken_id = read.get_rawtoken_with_certain_lexical_category(
+        logger.info("Got simple token")
+        rawtoken_id = read.get_rawtoken_id_with_specific_language_and_lexical_category(
             rawtoken=token,
             lexical_category=lexical_category_qid,
             language=iso_language_code,
@@ -155,6 +158,7 @@ default_data = {
 
 @app.post("/lookup")
 async def lookup(body: Dict[str, Any]):
+    logger.info("Got lookup")
     error_messages = []
     global default_data
 
@@ -295,4 +299,3 @@ async def get_open_api_endpoint():
         description="This is a fantastic API made with FastAPI.",
         routes=app.routes,
     )
-
