@@ -1,10 +1,24 @@
+# Thanks to Nicolas Vigneron for pointing out the need to separate
+# attestable sources from user-generated ones like Wikipedia
+# when using the data for usage examples in Wikidata
 "departementserien":
         "collection": "riksdagen"
-        "collection_qid": ""
         "workdirectory": "data/se/riksdagen/departementserien"
         "qid": "Q123501464"
+        attestable: true
+        type: written_work
+        license: riksdagen_license
 "proposition":
         "collection": "riksdagen"
-        "collection_qid": ""
         "workdirectory": "data/se/riksdagen/proposition"
         "qid": "Q123501430"
+        attestable: true
+        type: written_work
+        license: riksdagen_license
+"folketinget":
+        collection: folketinget
+        workdirectory: "data/da/folketinget/folketinget"
+        "qid": "Q124006002"
+        attestable: true
+        type: mixed  # investigate
+        license: folketinget_license

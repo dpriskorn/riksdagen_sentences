@@ -7,6 +7,7 @@ from models.exceptions import MissingInformationError
 
 class Entity(BaseModel):
     """Hashable entity that can be deduplicated"""
+
     label: str
     ner_label: str
 

@@ -24,6 +24,7 @@ fasttext-langdetect = { git = "https://github.com/dpriskorn/fasttext-langdetect.
 dask = "^2023.11.0"
 pyyaml = "^6.0.1"
 pymysql = "^1.1.0"
+pdfminer-six = "^20221105"
 
 
 [tool.poetry.group.dev.dependencies]

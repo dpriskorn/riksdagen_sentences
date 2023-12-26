@@ -47,7 +47,14 @@ Riksdagen has about 600k documents that can be downloaded as open data.
 
 This project is a stepping stone to an even larger database of sentences and tokens that we can use to enrich the lexicographic data in Wikidata.
 
-## Data model
+## Design
+
+### Inspired by
+* https://medium.com/@jccguimaraes/designing-an-api-6609eb771b18
+* https://levelup.gitconnected.com/to-create-an-evolvable-api-stop-thinking-about-urls-2ad8b4cc208e
+* https://en.wikipedia.org/wiki/Don%27t_Make_Me_Think
+
+### Data model
 ![Datamodel](/diagrams/datamodel.svg)
 
 [UML source](/diagrams/datamodel.puml)
@@ -70,8 +77,9 @@ Now download some of the source datasets from Riksdagen and put them in a data/s
 `$ python riksdagen_analyzer --analyze`
 
 ## Sources
-### Unilingual
-* Riksdagen open data: 600k documents ~1TB database size in total https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
+### Mostly unilingual
+* (sv) Riksdagen open data: ~600k machine readable HTML/TEXT documents ~1TB database size in total https://www.riksdagen.se/sv/dokument-och-lagar/riksdagens-oppna-data/dokument/
+* (da) Folketinget open data: ~500k programmatically generated PDF documents https://www.ft.dk/da/dokumenter/aabne_data#276BF4DB3854444286D8F71F742FD018
 
 ## Related corpora
 * Digital Corpus of the European Parliament https://wt-public.emm4u.eu/Resources/DCEP-2013/DCEP-Download-Page.html (EU languages)

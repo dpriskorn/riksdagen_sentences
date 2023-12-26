@@ -1,0 +1,14 @@
+# This has importance for Usage examples in Wikidata, see
+# From https://github.com/dpriskorn/LexUtils/blob/master/lexutils/config/enums.py#L32
+#class ReferenceType(Enum):
+#    WRITTEN = "Q47461344"
+#    ORAL = "Q52946"
+speech:
+  name_en: "speech"
+  qid: "Q52946"
+written_work:
+  name_en: "written work"
+  qid: "Q47461344"
+mixed:
+  name_en: mixed
+  qid: ""

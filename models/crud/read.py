@@ -227,7 +227,9 @@ class Read(Mariadb):
         result = self.cursor.fetchone()
         if result:
             rowid = result[0]
-            logger.debug(f"Got entity id: {rowid} for {entity.label}:{entity.ner_label_id}")
+            logger.debug(
+                f"Got entity id: {rowid} for {entity.label}:{entity.ner_label_id}"
+            )
             return rowid
         else:
             logger.debug(f"No entity found for {entity.label}:{entity.ner_label_id}")

@@ -227,4 +227,3 @@ class Sentence(BaseModel):
         insert.close_db()
         entities = Entities(sentence_id=sentence_id, sentence=self)
         entities.extract_and_insert()
-

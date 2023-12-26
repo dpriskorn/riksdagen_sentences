@@ -1,3 +1,6 @@
 "riksdagen":
   "qid": ""
   "provider": "riksdagsförvaltningen"
+"folketinget":
+  "qid": ""
+  "provider": "folketinget"
