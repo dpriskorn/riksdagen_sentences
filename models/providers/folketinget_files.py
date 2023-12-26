@@ -9,12 +9,16 @@ from models.providers.folketinget_file import FolketingetFile
 class FolketingetFiles(BaseModel):
     """Class that handles downloading of Fil object json from Folketinget
 
-    Inspired by https://towardsdatascience.com/extracting-text-from-pdf-files-with-python-a-comprehensive-guide-9fc4003d517"""
+    Inspired by https://towardsdatascience.com/extracting-text-from-pdf-files-with-python-a-comprehensive-guide-9fc4003d517
+    """
+
     url: str
     files: List[FolketingetFile] = list()
 
     def start(self):
         print("Downloading from Folketinget")
+        # TODO turn into a generator to yield all documents
+        #  url: https://oda.ft.dk/api/Fil?$inlinecount=allpages&$skip=100
         json_ = self.fetch_and_parse_json()
         self.parse_into_objects(json_data=json_)
         for file in self.files:

@@ -5,11 +5,11 @@ import requests
 from pydantic import BaseModel
 from io import BytesIO
 from pdfminer.high_level import extract_text
-from pdfminer.pdfparser import PDFSyntaxError
 
 
 class FolketingetFile(BaseModel):
     """This downloads and extract the data in the Fil objects from Folketinget"""
+
     id: int
     dokumentid: int
     titel: str
@@ -92,13 +92,13 @@ class FolketingetFile(BaseModel):
     def extract_pdf_text(self):
         self.fetch_and_check_pdf()
         if self.pdf_content is not None:
-            try:
-                with BytesIO(self.pdf_content) as pdf_buffer:
-                    text = extract_text(pdf_buffer)
-                    return text
-            except PDFSyntaxError as e:
-                print(f"PDF Syntax Error: {e}")
-                return None
+            # try:
+            with BytesIO(self.pdf_content) as pdf_buffer:
+                text = extract_text(pdf_buffer)
+                return text
+            # except BaseException as e:
+            #     print(f"PDF Syntax Error: {e}")
+            #     return None
         else:
             print("No valid PDF content to extract.")
             return None
