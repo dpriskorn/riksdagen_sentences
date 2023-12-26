@@ -31,15 +31,11 @@ def supported_iso_codes() -> List[str]:
     return read.get_all_iso_codes()
 
 
-class NotFoundError(BaseException):
-    pass
-
-
 def lookup_sentences(
     iso_language_code: str,
     lexical_category_qid: str,
     token: str,
-    accepted_license_qids: List[str],
+    # accepted_license_qids: List[str],
     # syntactic_head_lid: str,
 ) -> Tuple[int, List[SentenceResult]]:
     # TODO we get back a list of tuples with the raw sentence and uuid
@@ -131,12 +127,12 @@ default_data = {
         "read-only": False,
         "value": "",
     },
-    "accepted_license_qids": {
-        "type": "array",
-        "name": "accepted_license_qids",
-        "read-only": False,
-        "value": [],
-    },
+    # "accepted_license_qids": {
+    #     "type": "array",
+    #     "name": "accepted_license_qids",
+    #     "read-only": False,
+    #     "value": [],
+    # },
     # "next": {"type": "url", "name": "next", "read-only": True, "value": ""},
     "information": {
         "type": "text",
@@ -191,13 +187,13 @@ async def lookup(body: Dict[str, Any]):
         #     syntactic_head_lid = ""
         #     data["syntactic_head_lid"] = default_data["syntactic_head_lid"]
         ## lists
-        if data.get("accepted_license_qids") and data.get("accepted_license_qids").get(
-            "value"
-        ):
-            accepted_license_qids = data["accepted_license_qids"]["value"]
-        else:
-            accepted_license_qids = list()
-            data["accepted_license_qids"] = default_data["accepted_license_qids"]
+        # if data.get("accepted_license_qids") and data.get("accepted_license_qids").get(
+        #     "value"
+        # ):
+        #     accepted_license_qids = data["accepted_license_qids"]["value"]
+        # else:
+        #     accepted_license_qids = list()
+        #     data["accepted_license_qids"] = default_data["accepted_license_qids"]
 
         if (
             not token.strip()
@@ -216,23 +212,23 @@ async def lookup(body: Dict[str, Any]):
         #     )
         #     error_messages.append(error_message)
 
-        if accepted_license_qids is not None:
-            # Verify if all provided license QIDs are valid
-            valid_license_qids = [
-                qid for qid in accepted_license_qids if qid in supported_license_qids()
-            ]
-            invalid_license_qids = [
-                qid for qid in accepted_license_qids if qid not in valid_license_qids
-            ]
-            if invalid_license_qids:
-                error_message = (
-                    f"Invalid license QIDs: {', '.join(invalid_license_qids)}"
-                )
-                error_messages.append(error_message)
-            else:
-                # todo supply structured options here
-                # data["accepted_license_qids"]["value"] = valid_license_qids
-                pass
+        # if accepted_license_qids is not None:
+        #     # Verify if all provided license QIDs are valid
+        #     valid_license_qids = [
+        #         qid for qid in accepted_license_qids if qid in supported_license_qids()
+        #     ]
+        #     invalid_license_qids = [
+        #         qid for qid in accepted_license_qids if qid not in valid_license_qids
+        #     ]
+        #     if invalid_license_qids:
+        #         error_message = (
+        #             f"Invalid license QIDs: {', '.join(invalid_license_qids)}"
+        #         )
+        #         error_messages.append(error_message)
+        #     else:
+        #         # todo supply structured options here
+        #         # data["accepted_license_qids"]["value"] = valid_license_qids
+        #         pass
 
         # Validate provided lexical_category_qid against accepted QIDs
         invalid_iso_code = iso_language_code not in supported_iso_codes()
@@ -268,7 +264,7 @@ async def lookup(body: Dict[str, Any]):
         count, data = lookup_sentences(
             lexical_category_qid=lexical_category_qid,
             token=token,
-            accepted_license_qids=accepted_license_qids,
+            # accepted_license_qids=accepted_license_qids,
             # syntactic_head_lid=syntactic_head_lid,
             iso_language_code=iso_language_code,
         )
