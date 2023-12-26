@@ -131,7 +131,7 @@ class Read(Mariadb):
             JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
             JOIN score ON sentence.score = score.id
             WHERE rawtoken_sentence_linking.rawtoken = %s
-            ORDER BY sentence.text ASC
+            ORDER BY LENGTH(sentence.text) ASC
             LIMIT %s OFFSET %s;
             """
             self.cursor.execute(query, (rawtoken_id, limit, offset))
@@ -153,7 +153,7 @@ class Read(Mariadb):
             JOIN score ON sentence.score = score.id
             WHERE language.iso_code = %s
             AND LOWER(sentence.text) LIKE LOWER(%s)
-            ORDER BY sentence.text ASC
+            ORDER BY LENGTH(sentence.text) ASC
             LIMIT %s OFFSET %s;
             """
             self.cursor.execute(query, (language, f"%{compound_token}%", limit, offset))
