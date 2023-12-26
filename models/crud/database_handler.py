@@ -38,6 +38,7 @@ class Mariadb(BaseModel):
         """Connect to a local database"""
         # Connection parameters
         host = "localhost"
+        #host = "0.0.0.0"
         user = "riksdagen"
         password = "password"
         database = "riksdagen"
@@ -50,7 +51,7 @@ class Mariadb(BaseModel):
             logger.debug("succesfully connected to mariadb")
 
         except pymysql.Error as e:
-            print("Error: %s" % e)
+            raise ConnectionError("Error: %s" % e)
 
     def initialize_mariadb_cursor(self) -> None:
         self.cursor = self.connection.cursor()
