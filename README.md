@@ -49,10 +49,11 @@ This project is a stepping stone to an even larger database of sentences and tok
 
 ## Design
 
-### Inspired by
+### API design inspired by
 * https://medium.com/@jccguimaraes/designing-an-api-6609eb771b18
 * https://levelup.gitconnected.com/to-create-an-evolvable-api-stop-thinking-about-urls-2ad8b4cc208e
 * https://en.wikipedia.org/wiki/Don%27t_Make_Me_Think
+* https://jsonapi.org/format/#document-structure
 
 ### Data model
 ![Datamodel](/diagrams/datamodel.svg)
