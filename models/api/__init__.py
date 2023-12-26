@@ -31,6 +31,10 @@ def supported_iso_codes() -> List[str]:
     return read.get_all_iso_codes()
 
 
+class NotFoundError(BaseException):
+    pass
+
+
 def lookup_sentences(
     iso_language_code: str,
     lexical_category_qid: str,
@@ -44,6 +48,7 @@ def lookup_sentences(
     read = Read()
     read.connect_and_setup()
     if is_compound_token(token=token):
+        print("Got compund token")
         """This is complicated because Wikidata does NOT store
         all possible forms of phrases currently so we need to
         lookup the forms of the syntactic head to be sure we get
@@ -62,6 +67,7 @@ def lookup_sentences(
         read.close_db()
         return data
     else:
+        print("Got simple token")
         rawtoken_id = read.get_rawtoken_with_certain_lexical_category(
             rawtoken=token,
             lexical_category=lexical_category_qid,
@@ -73,6 +79,9 @@ def lookup_sentences(
             )
             read.close_db()
             return data
+        else:
+            return 0, list()
+            # raise NotFoundError("rawtoken not found in the database")
 
 
 # def generate_next_results_url():
@@ -90,6 +99,14 @@ def is_compound_token(token: str) -> bool:
     return len(token.split()) > 1
 
 
+def serialize(data):
+    """This is needed to dump the pydantic model recursively"""
+    serialized_data = []
+    for item in data:
+        serialized_data.append(item.dump_model())
+    return serialized_data
+
+
 # class Data(BaseModel):
 #     pass
 
@@ -102,12 +119,12 @@ default_data = {
         "read-only": False,
         "value": "",
     },
-    "syntactic_head_lid": {
-        "type": "text",
-        "name": "syntactic head wikidata lexeme id",
-        "read-only": False,
-        "value": "",
-    },
+    # "syntactic_head_lid": {
+    #     "type": "text",
+    #     "name": "syntactic head wikidata lexeme id",
+    #     "read-only": False,
+    #     "value": "",
+    # },
     "iso_language_code": {
         "type": "text",
         "name": "iso_language_code",
@@ -120,7 +137,7 @@ default_data = {
         "read-only": False,
         "value": [],
     },
-    "next": {"type": "url", "name": "next", "read-only": True, "value": ""},
+    # "next": {"type": "url", "name": "next", "read-only": True, "value": ""},
     "information": {
         "type": "text",
         "name": "information",
@@ -131,9 +148,9 @@ default_data = {
             "the following requirement because it hinders storing state in the network "
             "'The members data and errors MUST NOT coexist in the same document.'. "
             "Usage instructions:\n"
-            "* For tokens with no space we need [lexical_category_qid, iso_language_code].\n"
+            "* For tokens with no space we need [token, lexical_category_qid, iso_language_code].\n"
             "* For tokens with at least one space (aka phrase) we need "
-            "[lexical_category_qid, iso_language_code, syntactic_head_lexeme_id]\n"
+            "[token, iso_language_code]\n"
             "Please remove the errors key from data before resubmitting."
         ),
     },
@@ -166,13 +183,13 @@ async def lookup(body: Dict[str, Any]):
         else:
             iso_language_code = ""
             data["iso_language_code"] = default_data["iso_language_code"]
-        if data.get("syntactic_head_lid") and data.get("syntactic_head_lid").get(
-            "value"
-        ):
-            syntactic_head_lid = data["syntactic_head_lid"]["value"]
-        else:
-            syntactic_head_lid = ""
-            data["syntactic_head_lid"] = default_data["syntactic_head_lid"]
+        # if data.get("syntactic_head_lid") and data.get("syntactic_head_lid").get(
+        #     "value"
+        # ):
+        #     syntactic_head_lid = data["syntactic_head_lid"]["value"]
+        # else:
+        #     syntactic_head_lid = ""
+        #     data["syntactic_head_lid"] = default_data["syntactic_head_lid"]
         ## lists
         if data.get("accepted_license_qids") and data.get("accepted_license_qids").get(
             "value"
@@ -221,15 +238,16 @@ async def lookup(body: Dict[str, Any]):
         invalid_iso_code = iso_language_code not in supported_iso_codes()
         if invalid_iso_code:
             # todo supply structured options here
-            error_message = f"Invalid ISO code: {invalid_iso_code} for . Supported QIDs: {', '.join(supported_lexical_language_qids())}"
+            error_message = f"Invalid ISO code: '{iso_language_code}'. Supported codes: {', '.join(supported_iso_codes())}"
             error_messages.append(error_message)
 
         # Validate provided lexical_category_qid against accepted QIDs
-        invalid_qid = lexical_category_qid not in supported_lexical_language_qids()
-        if invalid_qid:
-            # todo supply structured options here
-            error_message = f"Invalid QID: {lexical_category_qid} for iso_language_code. Supported codes: {', '.join(supported_iso_codes())}"
-            error_messages.append(error_message)
+        if not is_compound_token(token=token):
+            invalid_qid = lexical_category_qid not in supported_lexical_language_qids()
+            if invalid_qid:
+                # todo supply structured options here
+                error_message = f"Invalid QID: {lexical_category_qid} for lexical_category_qid. Supported QIDs: {', '.join(supported_lexical_language_qids())}"
+                error_messages.append(error_message)
 
         # Generate the URL for next results (pagination)
         # next_url = generate_next_results_url()
@@ -254,7 +272,8 @@ async def lookup(body: Dict[str, Any]):
             # syntactic_head_lid=syntactic_head_lid,
             iso_language_code=iso_language_code,
         )
-        headers = {"X-Total-Count": f"count"}
+        data = serialize(data)
+        headers = {"X-Total-Count": f"{count}"}
         # Recommended to be an int here https://stackoverflow.com/questions/3715981/what-s-the-best-restful-method-to-return-total-number-of-items-in-an-object
         # headers = {"X-Total-Count": count}
         return JSONResponse(content={"data": data}, headers=headers)
@@ -280,3 +299,4 @@ async def get_open_api_endpoint():
         description="This is a fantastic API made with FastAPI.",
         routes=app.routes,
     )
+

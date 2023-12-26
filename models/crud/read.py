@@ -76,18 +76,17 @@ class Read(Mariadb):
     def get_rawtoken_with_certain_lexical_category(
         self, language: str, rawtoken: str, lexical_category: str
     ):
-        lexcat_item_int = self.item_int(lexical_category)
         query = """
         SELECT rawtoken.id
         FROM rawtoken
-        JOIN lexical_category ON rawtoken.lexical_category_id = lexical_category.id
-        JOIN language ON rawtoken.language_id = language.id
+        JOIN lexical_category ON rawtoken.lexical_category = lexical_category.id
+        JOIN language ON rawtoken.language = language.id
         WHERE rawtoken.text = %s
-        AND rawtoken.lexical_category_id = %s
+        AND lexical_category.qid = %s
         AND language.iso_code = %s;
         """
-        self.row_cursor.execute(query, (rawtoken, lexcat_item_int, language))
-        results = self.row_cursor.fetchall()
+        self.cursor.execute(query, (rawtoken, lexical_category, language))
+        results = self.cursor.fetchall()
         return results
 
     def count_sentences_for_rawtoken_without_space(self, rawtoken_id: int) -> int:
@@ -126,10 +125,10 @@ class Read(Mariadb):
         count = self.count_sentences_for_rawtoken_without_space(rawtoken_id=rawtoken_id)
         if count:
             query = """
-            SELECT sentence.text, sentence.uuid, score.score_value
+            SELECT sentence.text, sentence.uuid, score.value as score_value
             FROM sentence
             JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
-            JOIN score ON sentence.score_id = score.id
+            JOIN score ON sentence.score = score.id
             WHERE rawtoken_sentence_linking.rawtoken = %s
             LIMIT %s OFFSET %s;
             """

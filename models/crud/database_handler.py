@@ -19,8 +19,6 @@ class Mariadb(BaseModel):
         "config/named_entity_recognition_labels.yml"
     )
     connection: Connection = None
-    # cursor: Cursor = None
-    # row_cursor: Cursor = None
     cursor: Cursor = None
 
     class Config:

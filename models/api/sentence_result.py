@@ -11,4 +11,7 @@ class SentenceResult(BaseModel):
 
     attributes: SentenceAttributes
     type: str = "sentence"
-    id: int  # uuid
+    id: str  # uuid
+
+    def dump_model(self):
+        return self.model_dump()
