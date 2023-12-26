@@ -40,24 +40,24 @@ class Create(Mariadb):
             """,
             """CREATE TABLE IF NOT EXISTS lexical_category (
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-                qid SMALLINT UNSIGNED NOT NULL,
+                qid VARCHAR(30) UNSIGNED NOT NULL,
                 postag TEXT UNIQUE NOT NULL
             );""",
             """CREATE TABLE IF NOT EXISTS language (
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 name_en TEXT NOT NULL UNIQUE,
                 iso_code TEXT NOT NULL UNIQUE,
-                qid TEXT NOT NULL UNIQUE
+                qid VARCHAR(30) NOT NULL UNIQUE
             );""",
             """CREATE TABLE IF NOT EXISTS provider (
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 title TEXT NOT NULL,
-                qid INT UNSIGNED NOT NULL
+                qid VARCHAR(30) NOT NULL UNIQUE
             );""",
             """CREATE TABLE IF NOT EXISTS collection (
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 title TEXT NOT NULL,
-                qid INT UNSIGNED NOT NULL,
+                qid VARCHAR(30) NOT NULL UNIQUE,
                 provider SMALLINT UNSIGNED NOT NULL,
                 FOREIGN KEY (provider) REFERENCES provider(id)
             );""",
@@ -65,7 +65,7 @@ class Create(Mariadb):
                 id SMALLINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 title TEXT NOT NULL,
                 workdirectory TEXT NOT NULL,
-                qid INT UNSIGNED NOT NULL UNIQUE,
+                qid VARCHAR(30) NOT NULL UNIQUE,
                 collection SMALLINT UNSIGNED,
                 FOREIGN KEY (collection) REFERENCES collection(id)
             );""",
@@ -85,7 +85,7 @@ class Create(Mariadb):
             """CREATE TABLE IF NOT EXISTS sentence (
                 id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
                 text TEXT NOT NULL,
-                uuid VARCHAR(255) NOT NULL UNIQUE,
+                uuid VARCHAR(36) NOT NULL UNIQUE,
                 document SMALLINT UNSIGNED NOT NULL,
                 score SMALLINT UNSIGNED NOT NULL,
                 language SMALLINT UNSIGNED NOT NULL,
