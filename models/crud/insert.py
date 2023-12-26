@@ -2,10 +2,8 @@ import logging
 from typing import Any
 
 import yaml
-from spacy.tokens import Span
 
 from models.crud.database_handler import Mariadb
-from models.crud.read import Read
 
 logger = logging.getLogger(__name__)
 

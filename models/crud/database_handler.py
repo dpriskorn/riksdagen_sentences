@@ -38,7 +38,6 @@ class Mariadb(BaseModel):
         """Connect to a local database"""
         # Connection parameters
         host = "localhost"
-        #host = "0.0.0.0"
         user = "riksdagen"
         password = "password"
         database = "riksdagen"
