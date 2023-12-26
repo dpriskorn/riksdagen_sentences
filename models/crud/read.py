@@ -1,9 +1,10 @@
 import logging
-from typing import Any, List
+from typing import Any, List, Tuple
 
 import spacy
-from spacy.tokens import Span
 
+from models.api import SentenceResult
+from models.api.sentence_result import SentenceAttributes
 from models.crud.database_handler import Mariadb
 from models.exceptions import PostagError, MissingLanguageError, MissingInformationError
 
@@ -11,6 +12,23 @@ logger = logging.getLogger(__name__)
 
 
 class Read(Mariadb):
+    """Read methods and helper methods"""
+
+    @staticmethod
+    def parse_into_sentence_results(results: Any) -> List[SentenceResult]:
+        if results:
+            sentence_results = list()
+            for result in results:
+                sentence_results.append(
+                    SentenceResult(
+                        attributes=SentenceAttributes(text=result[0], score=result[2]),
+                        id=result[1],
+                    )
+                )
+            return sentence_results
+        else:
+            return list()
+
     def get_all_dataset_ids(self) -> List[int]:
         """Return ids of all datasets"""
         query = """SELECT id
@@ -55,31 +73,91 @@ class Read(Mariadb):
             print(f"Got dataset id: {dataset_id}")
             return dataset_id
 
-    # def get_rawtoken_with_certain_lexical_category(
-    #     self, rawtoken: str, lexical_category: str
-    # ):
-    #     lexcat_item_int = self.item_int(lexical_category)
-    #     query = """
-    #         SELECT *
-    #         FROM rawtoken
-    #         JOIN lexical_category ON rawtoken.lexical_category_id = lexical_category.id
-    #         WHERE rawtoken.text = %s
-    #         AND rawtoken.lexical_category_id = %s
-    #         """
-    #     self.row_cursor.execute(query, (rawtoken, lexcat_item_int))
-    #     results = self.row_cursor.fetchall()
-    #     return results
-    #
-    # def get_sentences_for_rawtoken_id(self, rawtoken_id: int):
-    #     query = """
-    #     SELECT * FROM sentence
-    #     JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence_id
-    #     WHERE rawtoken_sentence_linking.rawtoken_id = %s
-    #     """
-    #     self.row_cursor.execute(query, (rawtoken_id,))
-    #     results = self.row_cursor.fetchall()
-    #     return results
-    #
+    def get_rawtoken_with_certain_lexical_category(
+        self, language: str, rawtoken: str, lexical_category: str
+    ):
+        lexcat_item_int = self.item_int(lexical_category)
+        query = """
+        SELECT rawtoken.id
+        FROM rawtoken
+        JOIN lexical_category ON rawtoken.lexical_category_id = lexical_category.id
+        JOIN language ON rawtoken.language_id = language.id
+        WHERE rawtoken.text = %s
+        AND rawtoken.lexical_category_id = %s
+        AND language.iso_code = %s;
+        """
+        self.row_cursor.execute(query, (rawtoken, lexcat_item_int, language))
+        results = self.row_cursor.fetchall()
+        return results
+
+    def count_sentences_for_rawtoken_without_space(self, rawtoken_id: int) -> int:
+        query = """
+        SELECT COUNT(sentence.id) AS sentence_count
+        FROM sentence
+        JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
+        JOIN score ON sentence.score = score.id
+        WHERE rawtoken_sentence_linking.rawtoken = %s
+        """
+        self.cursor.execute(query, (rawtoken_id,))
+        result = self.cursor.fetchone()
+        if result:
+            return int(result[0])
+        else:
+            raise ValueError("Got no result for count")
+
+    def count_sentences_for_compound_token(self, compound_token: str) -> int:
+        query = """
+        SELECT COUNT(sentence.id) AS sentence_count
+        FROM sentence
+        JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
+        JOIN score ON sentence.score_id = score.id
+        WHERE rawtoken_sentence_linking.rawtoken = %s
+        """
+        self.cursor.execute(query, (compound_token,))
+        result = self.cursor.fetchone()
+        if result:
+            return int(result[0])
+        else:
+            raise ValueError("Got no result for count")
+
+    def get_sentences_for_rawtoken_without_space(
+        self, rawtoken_id: int, limit: int = 100, offset: int = 0
+    ) -> Tuple[int, List[SentenceResult]]:
+        count = self.count_sentences_for_rawtoken_without_space(rawtoken_id=rawtoken_id)
+        if count:
+            query = """
+            SELECT sentence.text, sentence.uuid, score.score_value
+            FROM sentence
+            JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
+            JOIN score ON sentence.score_id = score.id
+            WHERE rawtoken_sentence_linking.rawtoken = %s
+            LIMIT %s OFFSET %s;
+            """
+            self.cursor.execute(query, (rawtoken_id, limit, offset))
+            results = self.cursor.fetchall()
+            return count, self.parse_into_sentence_results(results=results)
+        else:
+            return count, list()
+
+    def get_sentences_for_compound_token(
+        self, compound_token: str, language: str, limit: int = 100, offset: int = 0
+    ) -> Tuple[int, List[SentenceResult]]:
+        count = self.count_sentences_for_compound_token(compound_token=compound_token)
+        if count:
+            query = """
+            SELECT sentence.text, sentence.uuid
+            FROM sentence
+            JOIN language ON sentence.language_id = language.id
+            WHERE language.iso_code = %s
+            AND LOWER(sentence.text) = LOWER(%s)
+            LIMIT %s
+            OFFSET %s;
+            """
+            self.cursor.execute(query, (compound_token, language, limit, offset))
+            results = self.cursor.fetchall()
+            return count, self.parse_into_sentence_results(results=results)
+        else:
+            return count, list()
 
     def get_lexical_category_id(self, token: Any) -> int:
         query = """SELECT id
@@ -233,3 +311,13 @@ class Read(Mariadb):
             return rowid
         else:
             logger.debug(f"No entity found for {entity.label}:{entity.ner_label_id}")
+
+    def get_all_iso_codes(self) -> List[str]:
+        self.cursor.execute("SELECT iso_code FROM language")
+        iso_codes = [row[0] for row in self.cursor.fetchall()]
+        return iso_codes
+
+    def get_all_lexical_language_qids(self):
+        self.cursor.execute("SELECT qid FROM lexical_category")
+        qids = [row[0] for row in self.cursor.fetchall()]
+        return qids
