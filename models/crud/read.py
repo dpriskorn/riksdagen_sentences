@@ -95,7 +95,6 @@ class Read(Mariadb):
         SELECT COUNT(sentence.id) AS sentence_count
         FROM sentence
         JOIN rawtoken_sentence_linking ON sentence.id = rawtoken_sentence_linking.sentence
-        JOIN score ON sentence.score = score.id
         WHERE rawtoken_sentence_linking.rawtoken = %s
         """
         self.cursor.execute(query, (rawtoken_id,))
