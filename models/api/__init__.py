@@ -73,6 +73,7 @@ def lookup_sentences(
             language=iso_language_code,
         )
         if rawtoken_id:
+            logger.info(f"Looking up sentences for rawtoken_id: {rawtoken_id}")
             data = read.get_sentences_for_rawtoken_without_space(
                 rawtoken_id=rawtoken_id
             )
