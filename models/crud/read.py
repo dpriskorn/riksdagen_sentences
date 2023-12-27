@@ -133,7 +133,9 @@ class Read(Mariadb):
             ORDER BY LENGTH(sentence.text) ASC
             LIMIT %s OFFSET %s;
             """
-            self.cursor.execute(query, (rawtoken_id, limit, offset))
+            prepared = self.cursor.mogrify(query, (rawtoken_id, limit, offset))
+            logger.debug(prepared)
+            self.cursor.execute(prepared)
             results = self.cursor.fetchall()
             return count, self.parse_into_sentence_results(results=results)
         else:
