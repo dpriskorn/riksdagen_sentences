@@ -30,12 +30,12 @@ The resulting dataset is planned to be released in Zenodo
 and is expected to be around 1TB  
 
 ## Features
-* reliability
-* locked in time
-* referencable
-* language detected (using Fasttext langdetect)
-* uniquely identifiable
-* linkable (the individual sentences are not planned to be 
+* Reliability
+* Locked in time
+* Referencable
+* Language detected (using Fasttext langdetect)
+* Uniquely identifiable
+* Linkable (the individual sentences are not planned to be 
 linkable at this stage, but the release is and line numbers 
 or UUIDs can be used to link with no ambiguity)
 * Named Entity Recognition entities for each sentence and document
