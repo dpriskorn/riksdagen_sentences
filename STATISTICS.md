@@ -17,18 +17,20 @@ Note: only one document was analyzed since the PR was merged
 
 ![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/86cc92ca-c0b8-477c-a2e4-d0fea4de0fbb)
 
-
 ### Rawtokens with a langdetect score > 0.7 (we accept > 0.4)
 ![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/b4b41f36-129c-435b-86f6-621abba34030)
 
 ### Garbage tokens 
 ![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/2eb12bc7-79e4-4b85-8a32-5ba4f24f7e92)
 
+### count_entities_in_sv_sentences_group_by_label.sql
+![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/05f21d65-d21c-4b1f-a679-87f01d22fbbf)
+
+
 ## Average entity count per document 
 Note: only one document was analyzed since the PR was merged
 
 ![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/1a417aa4-d411-4606-8e04-9535508bca2d)
-
 
 ## Entity count per document 
 Note: only one document was analyzed since the PR was merged
