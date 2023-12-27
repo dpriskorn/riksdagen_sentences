@@ -1,9 +1,9 @@
-# Riksdagen Sentences
+# Open Data Sentence Corpora
 This civic science project aims to analyze and sentenize all the open 
-data of Riksdagen using spaCy 
+data of Riksdagen and other sources using spaCy 
 to create an easily linkable 
 dataset of sentences that can be refered to from 
-Wikidata lexemes and other resources. 
+[Wikidata lexemes](https://www.wikidata.org/wiki/Wikidata:Lexicographical_data) and other resources. 
 
 The advantage of such a dataset is huge from a language perspective. 
 The sentences contain valuable information about what is going on in society. 
