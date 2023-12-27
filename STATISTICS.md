@@ -6,6 +6,13 @@ This was made after analyzing ~50 Swedish riksdagen open data documents out of 6
 
 540k links in total
 
+### Number of sentences
+![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/f762093e-656a-4a02-b486-c3e557697367)
+
+## Number of sentences with a langdetect score > 0.7
+![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/54d28615-4485-408d-b1b9-7613b74ce175)
+
+
 ### Rawtokens with a langdetect score > 0.7 (we accept > 0.4)
 ![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/b4b41f36-129c-435b-86f6-621abba34030)
 
