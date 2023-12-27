@@ -97,6 +97,9 @@ Now download some of the source datasets from Riksdagen and put them in a data/s
 ## Inspiration
 Alice Zhao https://www.youtube.com/watch?v=8Fw1nh8lR54
 
+## Thanks
+Thanks to Nicolas Vigneron and Asof Bartov for dicussions about the needs of Luthor and how to make this project most suitable as a source of sentences used in usage examples on Wikidata lexemes.
+
 ## License
 GPLv3+
 
