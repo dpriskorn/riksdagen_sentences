@@ -40,3 +40,5 @@ Note: only one document was analyzed since the PR was merged
 ## Database size
 ![image](https://github.com/dpriskorn/riksdagen_sentences/assets/68460690/3f51189d-e39d-4386-ae7f-ef1b8590788a)
 
+## Source
+Queries are found in th sql subfolder, see https://github.com/dpriskorn/riksdagen_sentences/tree/add_lookup_endpoint/sql
