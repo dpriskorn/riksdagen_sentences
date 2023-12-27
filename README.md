@@ -47,6 +47,9 @@ Riksdagen has about 600k documents that can be downloaded as open data.
 
 This project is a stepping stone to an even larger database of sentences and tokens that we can use to enrich the lexicographic data in Wikidata.
 
+## Statistics
+See [STATISTICS.md](/STATISTICS.md)
+
 ## Design
 
 ### API design inspired by
