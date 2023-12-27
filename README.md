@@ -39,7 +39,7 @@ and is expected to be around 1TB
 linkable at this stage, but the release is and line numbers 
 or UUIDs can be used to link with no ambiguity)
 * Named Entity Recognition entities for each sentence and document
-* APIs
+* An [evolvable](https://levelup.gitconnected.com/to-create-an-evolvable-api-stop-thinking-about-urls-2ad8b4cc208e) API
   * /lookup endpoint to get sentences to use as usage examples for [Wikidata lexemes](https://www.wikidata.org/wiki/Wikidata:Lexicographical_data) (based on the needs of [Luthor](https://luthor.toolforge.org/))
 
 ## Scope
