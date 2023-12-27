@@ -1,5 +1,5 @@
 import logging
-from typing import List, Any, Set
+from typing import Any, Set
 
 from pydantic import BaseModel
 
@@ -20,7 +20,10 @@ class Entities(BaseModel):
 
     def __extract(self) -> None:
         for ent in self.sentence.doc.ents:
-            if ent.start >= self.sentence.sent.start and ent.end <= self.sentence.sent.end:
+            if (
+                ent.start >= self.sentence.sent.start
+                and ent.end <= self.sentence.sent.end
+            ):
                 self.entities.add(Entity(label=ent.text, ner_label=ent.label_))
 
     def __insert(self):
@@ -35,5 +38,7 @@ class Entities(BaseModel):
             insert = Insert()
             insert.connect_and_setup()
             for entity_id in entity_ids:
-                insert.link_sentence_to_entity(entity_id=entity_id, sentence_id=self.sentence_id)
+                insert.link_sentence_to_entity(
+                    entity_id=entity_id, sentence_id=self.sentence_id
+                )
             insert.close_db()

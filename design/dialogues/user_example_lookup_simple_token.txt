@@ -1,0 +1,25 @@
+Server: Could you please provide the ISO language code in lowercase? This will help me find the right sentences for you.
+
+User: en
+
+Server: Great, thanks! What's the word you're seeking sentences for?
+
+User: "Serenity"
+
+Server: Got it! And could you specify the QID of the lexical category for "Serenity"? That'll help me find more accurate examples.
+
+User: Q161923
+
+server: do you want to restrict to only sentences covered by a certain licens?
+
+user: yes
+
+server: please provide a list of QIDs for the licenses you accept?
+
+user: []
+
+server: error: got no licenses: here are the licenses used for sentences in our datasets.
+
+user: [Q1]
+
+Server: Perfect! I'll gather some sentences that showcase the usage of "Serenity" as a noun. Please give me a moment.

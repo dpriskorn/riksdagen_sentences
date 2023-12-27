@@ -20,14 +20,14 @@ class language {
 entity provider {
     + id INT PRIMARY AUTOINCREMENT
     + title TEXT NOT NULL
-    + qid INT NOT NULL
+    + qid VARCHAR(30) NOT NULL UNIQUE
 }
 '' e.g. Riksdagens öppna data Q108560253
 '' QID for this term: Q59294700
 entity collection {
     + id INT PRIMARY AUTOINCREMENT
     + title TEXT NOT NULL
-    + qid INT NOT NULL
+    + qid VARCHAR(30) NOT NULL UNIQUE
     + provider INT NOT NULL
 }
 
@@ -35,7 +35,7 @@ entity collection {
 entity dataset {
     + id INT PRIMARY AUTOINCREMENT
     + title TEXT NOT NULL
-    + qid INT NOT NULL
+    + qid VARCHAR(30) NOT NULL UNIQUE
     + collection INT NOT NULL
 }
 

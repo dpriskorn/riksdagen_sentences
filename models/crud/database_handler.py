@@ -19,8 +19,6 @@ class Mariadb(BaseModel):
         "config/named_entity_recognition_labels.yml"
     )
     connection: Connection = None
-    # cursor: Cursor = None
-    # row_cursor: Cursor = None
     cursor: Cursor = None
 
     class Config:
@@ -50,7 +48,7 @@ class Mariadb(BaseModel):
             logger.debug("succesfully connected to mariadb")
 
         except pymysql.Error as e:
-            print("Error: %s" % e)
+            raise ConnectionError("Error: %s" % e)
 
     def initialize_mariadb_cursor(self) -> None:
         self.cursor = self.connection.cursor()
