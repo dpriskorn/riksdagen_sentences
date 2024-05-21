@@ -23,7 +23,7 @@ lxml = "^4.9.3"
 fasttext-langdetect = { git = "https://github.com/dpriskorn/fasttext-langdetect.git", branch = "main"}
 dask = "^2023.11.0"
 pyyaml = "^6.0.1"
-pymysql = "^1.1.0"
+pymysql = "^1.1.1"
 pdfminer-six = "^20221105"
 fastapi = "^0.109.1"
 uvicorn = {extras = ["standard"], version = "^0.25.0"}
